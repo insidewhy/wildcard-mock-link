@@ -41,8 +41,9 @@ const getResultFromFetchResult = (result: FetchResult | (() => FetchResult)): Fe
 
 interface QueryAndVariables {
   query: DocumentNode
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   variables: GraphQLVariables
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  context: Record<string, any>;
 }
 
 /**
@@ -76,11 +77,13 @@ export class WildcardMockLink extends MockLink {
       this.lastMutation = {
         query: op.query,
         variables: op.variables,
+        context: op.getContext(),
       }
     } else {
       this.lastQuery = {
         query: op.query,
         variables: op.variables,
+        context: op.getContext(),
       }
     }
 
