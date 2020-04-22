@@ -39,11 +39,17 @@ function isWildcard(
 const getResultFromFetchResult = (result: FetchResult | (() => FetchResult)): FetchResult =>
   typeof result === 'function' ? result() : result
 
-interface QueryAndVariables {
+interface StoredOperation {
   query: DocumentNode
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   variables: GraphQLVariables
+  context: GraphQLVariables
 }
+
+const toStoredOperation = (op: Operation) => ({
+  query: op.query,
+  variables: op.variables,
+  context: op.getContext(),
+})
 
 /**
  * Extends MockLink to provide the ability to match request queries independent
@@ -52,9 +58,9 @@ interface QueryAndVariables {
  */
 export class WildcardMockLink extends MockLink {
   private wildcardMatches = new Map<string, WildcardMock[]>()
-  public lastQuery?: QueryAndVariables
-  public lastMutation?: QueryAndVariables
-  public lastSubscription?: QueryAndVariables
+  public lastQuery?: StoredOperation
+  public lastMutation?: StoredOperation
+  public lastSubscription?: StoredOperation
 
   private lastResponse?: Promise<void>
 
@@ -73,15 +79,9 @@ export class WildcardMockLink extends MockLink {
     }
 
     if (operationType === 'mutation') {
-      this.lastMutation = {
-        query: op.query,
-        variables: op.variables,
-      }
+      this.lastMutation = toStoredOperation(op)
     } else {
-      this.lastQuery = {
-        query: op.query,
-        variables: op.variables,
-      }
+      this.lastQuery = toStoredOperation(op)
     }
 
     const wildcardMock = this.getWildcardMockMatch(op)
@@ -105,10 +105,7 @@ export class WildcardMockLink extends MockLink {
   }
 
   requestSubscription(op: Operation): Observable<FetchResult> | null {
-    this.lastSubscription = {
-      query: op.query,
-      variables: op.variables,
-    }
+    this.lastSubscription = toStoredOperation(op)
 
     const wildcardMock = this.getWildcardMockMatch(op)
     if (wildcardMock) {
