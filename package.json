@@ -1,0 +1,72 @@
+{
+  "name": "wildcard-mock-link",
+  "version": "1.0.0",
+  "description": "apollo client mocking",
+  "author": "insidewhy <github@chilon.net>",
+  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/insidewhy/wildcard-mock-link.git"
+  },
+  "keywords": [
+    "apollo",
+    "mock",
+    "mocking",
+    "mocks",
+    "link"
+  ],
+  "main": "dist.es5/index.js",
+  "module": "dist.es5m/index.js",
+  "es2015": "dist.es2015/index.js",
+  "typings": "dist.es2015/index",
+  "sideEffects": false,
+  "scripts": {
+    "prepublishOnly": "yarn build",
+    "build": "yarn build-modern && yarn build-es5 && yarn build-es5m",
+    "build-modern": "tsc -p src",
+    "build-es5": "tsc -p src --target es5 --outDir dist.es5",
+    "build-es5m": "yarn build-es5 -m es2015 --outDir dist.es5m",
+    "build-watch": "yarn build-es5 -w",
+    "clean": "rimraf 'dist*'",
+    "lint": "eslint 'src/*.ts'",
+    "lint-fix": "yarn lint --fix",
+    "run-prettier": "prettier 'src/*.ts' '*.md'",
+    "validate-prettiness": "yarn run-prettier -c",
+    "make-prettier": "yarn run-prettier --write",
+    "test": "yarn jest",
+    "watch": "yarn build-es5 && concurrently 'yarn build-watch' 'yarn jest-watch'",
+    "validate": "yarn test && yarn lint && yarn validate-prettiness",
+    "jest-watch": "yarn jest --watch"
+  },
+  "dependencies": {
+    "apollo-utilities": "^1.3.3",
+    "fast-json-stable-stringify": "^2.1.0"
+  },
+  "devDependencies": {
+    "@apollo/react-testing": "^3.1.4",
+    "@types/jest": "25.2.1",
+    "@types/react": "^16.9.34",
+    "@typescript-eslint/eslint-plugin": "2.28.0",
+    "@typescript-eslint/parser": "2.28.0",
+    "apollo-cache": "^1.3.4",
+    "apollo-cache-inmemory": "^1.6.5",
+    "apollo-client": "^2.6.8",
+    "apollo-link": "^1.2.14",
+    "concurrently": "5.1.0",
+    "eslint": "6.8.0",
+    "eslint-config-prettier": "6.10.1",
+    "graphql": "^14.0.0",
+    "husky": "4.2.5",
+    "jest": "25.3.0",
+    "prettier": "2.0.4",
+    "pretty-quick": "2.0.1",
+    "react": "^16.13.1",
+    "rimraf": "3.0.2",
+    "typescript": "3.8.3"
+  },
+  "peerDependencies": {
+    "@apollo/react-testing": "^3.1.4",
+    "apollo-link": "^1.2.14",
+    "graphql": "^14.0.0"
+  }
+}
