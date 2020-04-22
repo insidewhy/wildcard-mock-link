@@ -58,7 +58,7 @@
     "graphql": "14.5.8",
     "husky": "4.2.5",
     "jest": "25.3.0",
-    "prettier": "2.0.4",
+    "prettier": "2.0.5",
     "pretty-quick": "2.0.1",
     "react": "16.13.1",
     "rimraf": "3.0.2",
