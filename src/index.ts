@@ -10,16 +10,20 @@ export const MATCH_ANY_PARAMETERS = Symbol()
 
 export type GraphQLVariables = Record<string, any>
 
-export interface GraphQLRequestWithWildcard extends Omit<GraphQLRequest, 'variables'> {
+export interface GraphQLRequestWithWildcard
+  extends Omit<GraphQLRequest, 'variables'> {
   variables?: GraphQLRequest['variables'] | symbol
 }
 
-export interface WildcardMockedResponse extends Omit<MockedResponse, 'request'> {
+export interface WildcardMockedResponse
+  extends Omit<MockedResponse, 'request'> {
   request: GraphQLRequestWithWildcard
   nMatches?: number
 }
 
-export type MockedResponses = ReadonlyArray<WildcardMockedResponse | MockedResponse>
+export type MockedResponses = ReadonlyArray<
+  WildcardMockedResponse | MockedResponse
+>
 
 interface WildcardMock {
   result: FetchResult | (() => FetchResult) | undefined
@@ -28,7 +32,9 @@ interface WildcardMock {
   delay: number
 }
 
-function notWildcard(mock: WildcardMockedResponse | MockedResponse): mock is MockedResponse {
+function notWildcard(
+  mock: WildcardMockedResponse | MockedResponse,
+): mock is MockedResponse {
   return mock.request.variables !== MATCH_ANY_PARAMETERS
 }
 
@@ -38,8 +44,9 @@ function isWildcard(
   return mock.request.variables === MATCH_ANY_PARAMETERS
 }
 
-const getResultFromFetchResult = (result: FetchResult | (() => FetchResult)): FetchResult =>
-  typeof result === 'function' ? result() : result
+const getResultFromFetchResult = (
+  result: FetchResult | (() => FetchResult),
+): FetchResult => (typeof result === 'function' ? result() : result)
 
 interface StoredOperation {
   query: DocumentNode
@@ -66,7 +73,10 @@ export class WildcardMockLink extends MockLink {
 
   private lastResponse?: Promise<void>
 
-  private openSubscriptions = new Map<string, ZenObservable.SubscriptionObserver<FetchResult>>()
+  private openSubscriptions = new Map<
+    string,
+    ZenObservable.SubscriptionObserver<FetchResult>
+  >()
 
   constructor(mockedResponses: MockedResponses, addTypename?: boolean) {
     super(mockedResponses.filter(notWildcard), addTypename)
@@ -74,7 +84,8 @@ export class WildcardMockLink extends MockLink {
   }
 
   request(op: Operation): Observable<FetchResult> | null {
-    const operationType = (op.query.definitions?.[0] as OperationDefinitionNode)?.operation
+    const operationType = (op.query.definitions?.[0] as OperationDefinitionNode)
+      ?.operation
 
     if (operationType === 'subscription') {
       return this.requestSubscription(op)
@@ -155,7 +166,9 @@ export class WildcardMockLink extends MockLink {
       this.queryAndVariablesToString(request, variables),
     )
     if (!subscription) {
-      throw new Error('Could not send subscription result for subscription that is not open')
+      throw new Error(
+        'Could not send subscription result for subscription that is not open',
+      )
     } else {
       subscription.next(response)
     }
@@ -165,10 +178,15 @@ export class WildcardMockLink extends MockLink {
    * Send a new response to the open subscription matching `request`. This only
    * works for subscriptions that matched wildcard requests.
    */
-  sendWildcardSubscriptionResult(request: DocumentNode, response: FetchResult): void {
+  sendWildcardSubscriptionResult(
+    request: DocumentNode,
+    response: FetchResult,
+  ): void {
     const subscription = this.openSubscriptions.get(this.queryToString(request))
     if (!subscription) {
-      throw new Error('Could not send subscription result for subscription that is not open')
+      throw new Error(
+        'Could not send subscription result for subscription that is not open',
+      )
     } else {
       subscription.next(response)
     }
@@ -181,7 +199,9 @@ export class WildcardMockLink extends MockLink {
     const cacheKey = this.queryToString(request)
     const subscription = this.openSubscriptions.get(cacheKey)
     if (!subscription) {
-      throw new Error('Could not close subscription subscription that is not open')
+      throw new Error(
+        'Could not close subscription subscription that is not open',
+      )
     } else {
       subscription.complete()
       this.openSubscriptions.delete(cacheKey)
@@ -220,7 +240,8 @@ export class WildcardMockLink extends MockLink {
    */
   lastQueryMatches(request: DocumentNode): boolean {
     return (
-      !!this.lastQuery && this.queryToString(request) === this.queryToString(this.lastQuery.query)
+      !!this.lastQuery &&
+      this.queryToString(request) === this.queryToString(this.lastQuery.query)
     )
   }
 
@@ -230,7 +251,8 @@ export class WildcardMockLink extends MockLink {
   lastMutationMatches(request: DocumentNode): boolean {
     return (
       !!this.lastMutation &&
-      this.queryToString(request) === this.queryToString(this.lastMutation.query)
+      this.queryToString(request) ===
+        this.queryToString(this.lastMutation.query)
     )
   }
 
@@ -240,7 +262,8 @@ export class WildcardMockLink extends MockLink {
   lastSubscriptionMatches(request: DocumentNode): boolean {
     return (
       !!this.lastSubscription &&
-      this.queryToString(request) === this.queryToString(this.lastSubscription.query)
+      this.queryToString(request) ===
+        this.queryToString(this.lastSubscription.query)
     )
   }
 

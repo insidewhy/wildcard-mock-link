@@ -73,7 +73,10 @@ import { useQuery } from '@apollo/react-hooks'
 import { render, act } from '@testing-library/react'
 import gql from 'graphql-tag'
 import React, { FC } from 'react'
-import { MATCH_ANY_PARAMETERS, hookWrapperWithApolloMocks } from 'wildcard-mock-link'
+import {
+  MATCH_ANY_PARAMETERS,
+  hookWrapperWithApolloMocks,
+} from 'wildcard-mock-link'
 
 const CAT_QUALITIES_QUERY = gql`
   query($catName: String!) {
@@ -121,7 +124,10 @@ This library provides a utility function `hookWrapperWithApolloMocks` for creati
 import { useQuery } from '@apollo/react-hooks'
 import { renderHook, act as actHook } from '@testing-library/react-hooks'
 import gql from 'graphql-tag'
-import { MATCH_ANY_PARAMETERS, hookWrapperWithApolloMocks } from 'wildcard-mock-link'
+import {
+  MATCH_ANY_PARAMETERS,
+  hookWrapperWithApolloMocks,
+} from 'wildcard-mock-link'
 
 const CAT_QUALITIES_QUERY = gql`
   query($catName: String!) {
@@ -169,7 +175,10 @@ import { useQuery } from '@apollo/react-hooks'
 import { waitFor } from '@testing-library/react'
 import { renderHook, act as actHook } from '@testing-library/react-hooks'
 import gql from 'graphql-tag'
-import { MATCH_ANY_PARAMETERS, hookWrapperWithApolloMocks } from 'wildcard-mock-link'
+import {
+  MATCH_ANY_PARAMETERS,
+  hookWrapperWithApolloMocks,
+} from 'wildcard-mock-link'
 
 const MISCHIEF_SUBSCRIPTION = gql`
   subscription($catName: String!) {
@@ -182,7 +191,9 @@ const MISCHIEF_SUBSCRIPTION = gql`
 
 it('can push updates using the API', async () => {
   const useActsOfMischief = (catName: string) => {
-    const { data } = useSubscription(MISCHIEF_SUBSCRIPTION, { variables: { catName } })
+    const { data } = useSubscription(MISCHIEF_SUBSCRIPTION, {
+      variables: { catName },
+    })
     return data
   }
 
@@ -220,7 +231,9 @@ it('can push updates using the API', async () => {
     },
   }
   actHook(() => {
-    link.sendWildcardSubscriptionResult(MISCHIEF_SUBSCRIPTION, { data: updateData })
+    link.sendWildcardSubscriptionResult(MISCHIEF_SUBSCRIPTION, {
+      data: updateData,
+    })
   })
   await actHook(() =>
     waitFor(() => {
