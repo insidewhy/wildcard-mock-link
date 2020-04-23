@@ -237,7 +237,7 @@ export class WildcardMockLink extends MockLink {
   /**
    * Return true if the last subscription request matches the argument.
    */
-  lastSubscriptionRequestMatches(request: DocumentNode): boolean {
+  lastSubscriptionMatches(request: DocumentNode): boolean {
     return (
       !!this.lastSubscription &&
       this.queryToString(request) === this.queryToString(this.lastSubscription.query)

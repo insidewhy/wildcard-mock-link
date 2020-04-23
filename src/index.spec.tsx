@@ -1,5 +1,5 @@
-import { useQuery } from '@apollo/react-hooks'
-import { render, act } from '@testing-library/react'
+import { useQuery, useSubscription } from '@apollo/react-hooks'
+import { render, act, waitFor } from '@testing-library/react'
 import { renderHook, act as actHook } from '@testing-library/react-hooks'
 import gql from 'graphql-tag'
 import React, { FC } from 'react'
@@ -8,7 +8,7 @@ import { MATCH_ANY_PARAMETERS, hookWrapperWithApolloMocks, withApolloMocks } fro
 
 /* eslint-disable @typescript-eslint/explicit-function-return-type */
 
-const SIMPLE_QUERY = gql`
+const CAT_QUALITIES_QUERY = gql`
   query($catName: String!) {
     qualities(cats: $catName) {
       loveliness
@@ -20,7 +20,7 @@ describe('WildcardMockLink', () => {
   describe('handles wildcard queries', () => {
     it('for a single request', async () => {
       const useQueryOnce = (catName: string) => {
-        const { data } = useQuery(SIMPLE_QUERY, { variables: { catName } })
+        const { data } = useQuery(CAT_QUALITIES_QUERY, { variables: { catName } })
         return data
       }
 
@@ -33,23 +33,27 @@ describe('WildcardMockLink', () => {
       const { wrapper, link } = hookWrapperWithApolloMocks([
         {
           request: {
-            query: SIMPLE_QUERY,
+            query: CAT_QUALITIES_QUERY,
             variables: MATCH_ANY_PARAMETERS,
           },
           result: { data },
         },
       ])
-      const rendered = renderHook(() => useQueryOnce('tortand'), { wrapper })
+      const { result } = renderHook(() => useQueryOnce('tortand'), { wrapper })
       await actHook(() => link.waitForLastResponse())
-      expect(link.lastQueryMatches(SIMPLE_QUERY)).toBeTruthy()
+      expect(link.lastQueryMatches(CAT_QUALITIES_QUERY)).toBeTruthy()
       expect(link.lastQuery?.variables).toEqual({ catName: 'tortand' })
-      expect(rendered.result.current).toEqual(data)
+      expect(result.current).toEqual(data)
     })
 
     it('for multiple requests with the same mock', async () => {
       const useQueryTwice = () => {
-        const { data: firstData } = useQuery(SIMPLE_QUERY, { variables: { catName: 'snorf' } })
-        const { data: secondData } = useQuery(SIMPLE_QUERY, { variables: { catName: 'candrle' } })
+        const { data: firstData } = useQuery(CAT_QUALITIES_QUERY, {
+          variables: { catName: 'snorf' },
+        })
+        const { data: secondData } = useQuery(CAT_QUALITIES_QUERY, {
+          variables: { catName: 'candrle' },
+        })
         return { firstData, secondData }
       }
 
@@ -62,7 +66,7 @@ describe('WildcardMockLink', () => {
       const { wrapper, link } = hookWrapperWithApolloMocks([
         {
           request: {
-            query: SIMPLE_QUERY,
+            query: CAT_QUALITIES_QUERY,
             variables: MATCH_ANY_PARAMETERS,
           },
           result: { data },
@@ -70,16 +74,76 @@ describe('WildcardMockLink', () => {
       ])
       const rendered = renderHook(useQueryTwice, { wrapper })
       await actHook(() => link.waitForLastResponse())
-      expect(link.lastQueryMatches(SIMPLE_QUERY)).toBeTruthy()
+      expect(link.lastQueryMatches(CAT_QUALITIES_QUERY)).toBeTruthy()
       expect(link.lastQuery?.variables).toEqual({ catName: 'candrle' })
       expect(rendered.result.current).toEqual({ firstData: data, secondData: data })
+    })
+  })
+
+  describe('can be used to mock subscriptions', () => {
+    const MISCHIEF_SUBSCRIPTION = gql`
+      subscription($catName: String!) {
+        actsOfMischief(cats: $catName) {
+          description
+          severity
+        }
+      }
+    `
+
+    it('by pushing updates via the API', async () => {
+      const useActsOfMischief = (catName: string) => {
+        const { data } = useSubscription(MISCHIEF_SUBSCRIPTION, { variables: { catName } })
+        return data
+      }
+
+      const initialData = {
+        actsOfMischief: {
+          __typename: 'ActsOfMischief',
+          description: 'did not stay away from my bins',
+          severity: 'extreme',
+        },
+      }
+      const { wrapper, link } = hookWrapperWithApolloMocks([
+        {
+          request: {
+            query: MISCHIEF_SUBSCRIPTION,
+            variables: MATCH_ANY_PARAMETERS,
+          },
+          result: { data: initialData },
+        },
+      ])
+      const rendered = renderHook(() => useActsOfMischief('la don'), { wrapper })
+      expect(link.lastSubscriptionMatches(MISCHIEF_SUBSCRIPTION)).toBeTruthy()
+      expect(link.lastSubscription?.variables).toEqual({ catName: 'la don' })
+
+      await actHook(() =>
+        waitFor(() => {
+          expect(rendered.result.current).toEqual(initialData)
+        }),
+      )
+
+      const updateData = {
+        actsOfMischief: {
+          __typename: 'ActsOfMischief',
+          description: 'pushed that button',
+          severity: 'mild',
+        },
+      }
+      actHook(() => {
+        link.sendWildcardSubscriptionResult(MISCHIEF_SUBSCRIPTION, { data: updateData })
+      })
+      await actHook(() =>
+        waitFor(() => {
+          expect(rendered.result.current).toEqual(updateData)
+        }),
+      )
     })
   })
 })
 
 describe('withApolloMocks utility', () => {
   const MyCatComponent: FC<{ catName: string }> = ({ catName }) => {
-    const { data } = useQuery(SIMPLE_QUERY, { variables: { catName } })
+    const { data } = useQuery(CAT_QUALITIES_QUERY, { variables: { catName } })
     if (!data) {
       return <h1 role="main">Loading</h1>
     } else {
@@ -100,7 +164,7 @@ describe('withApolloMocks utility', () => {
       [
         {
           request: {
-            query: SIMPLE_QUERY,
+            query: CAT_QUALITIES_QUERY,
             variables: MATCH_ANY_PARAMETERS,
           },
           result: { data },
@@ -110,7 +174,7 @@ describe('withApolloMocks utility', () => {
     const { getByRole } = render(element)
     await act(() => link.waitForLastResponse())
 
-    expect(link.lastQueryMatches(SIMPLE_QUERY)).toBeTruthy()
+    expect(link.lastQueryMatches(CAT_QUALITIES_QUERY)).toBeTruthy()
     expect(link.lastQuery?.variables).toEqual({ catName: 'mr bad actor face' })
     const mainContent = getByRole('main')
     expect(mainContent?.textContent).toEqual('Loveliness: very')

@@ -18,7 +18,7 @@
 The `MockLink` provided with apollo requires the variables for every matching query to be specified ahead of time. In certain circumstances this is not convenient, i.e. using the `MockedProvider` in storybook stories. `WildcardMockLink` allows mocks to be specified that match a query with any variables, and these mocks can be configured to match more than once.
 
 ```typescript
-const SIMPLE_QUERY = gql`
+const CAT_QUALITIES_QUERY = gql`
   query($catName: String!) {
     qualities(cats: $catName) {
       loveliness
@@ -29,7 +29,7 @@ const SIMPLE_QUERY = gql`
 const link = new WildcardMockLink([
   {
     request: {
-      query: SIMPLE_QUERY,
+      query: CAT_QUALITIES_QUERY,
       variables: MATCH_ANY_PARAMETERS,
     },
     result: { data },
@@ -44,14 +44,14 @@ return (
 )
 ```
 
-The above mocked provider will match two requests for `SIMPLE_QUERY` no matter what the variables are due to `nMatches: 2`. If `nMatches` is omitted then the mock will match an infinite number of requests.
+The above mocked provider will match two requests for `CAT_QUALITIES_QUERY` no matter what the variables are due to `nMatches: 2`. If `nMatches` is omitted then the mock will match an infinite number of requests.
 
 ### Asserting against the latest request/mutation/subscription.
 
-The following returns true if the last query matches `SIMPLE_QUERY`.
+The following returns true if the last query matches `CAT_QUALITIES_QUERY`.
 
 ```typescript
-link.lastQueryMatches(SIMPLE_QUERY)
+link.lastQueryMatches(CAT_QUALITIES_QUERY)
 ```
 
 There is also `lastMutationMatches` and `lastSubscriptionMatches`.
@@ -75,7 +75,7 @@ import gql from 'graphql-tag'
 import React, { FC } from 'react'
 import { MATCH_ANY_PARAMETERS, hookWrapperWithApolloMocks } from 'wildcard-mock-link'
 
-const SIMPLE_QUERY = gql`
+const CAT_QUALITIES_QUERY = gql`
   query($catName: String!) {
     qualities(cats: $catName) {
       loveliness
@@ -96,7 +96,7 @@ it('can be used to mock data for a component tree', async () => {
     [
       {
         request: {
-          query: SIMPLE_QUERY,
+          query: CAT_QUALITIES_QUERY,
           variables: MATCH_ANY_PARAMETERS,
         },
         result: { data },
@@ -106,7 +106,7 @@ it('can be used to mock data for a component tree', async () => {
   const { getByRole } = render(element)
   await act(() => link.waitForLastResponse())
 
-  expect(link.lastQueryMatches(SIMPLE_QUERY)).toBeTruthy()
+  expect(link.lastQueryMatches(CAT_QUALITIES_QUERY)).toBeTruthy()
   expect(link.lastQuery?.variables).toEqual({ catName: 'mr bad actor face' })
   const mainContent = getByRole('main')
   expect(mainContent?.textContent).toEqual('Loveliness: very')
@@ -123,7 +123,7 @@ import { renderHook, act as actHook } from '@testing-library/react-hooks'
 import gql from 'graphql-tag'
 import { MATCH_ANY_PARAMETERS, hookWrapperWithApolloMocks } from 'wildcard-mock-link'
 
-const SIMPLE_QUERY = gql`
+const CAT_QUALITIES_QUERY = gql`
   query($catName: String!) {
     qualities(cats: $catName) {
       loveliness
@@ -133,7 +133,7 @@ const SIMPLE_QUERY = gql`
 
 it('can be used to mock data for a hook', async () => {
   const useQueryOnce = (catName: string) => {
-    const { data } = useQuery(SIMPLE_QUERY, { variables: { catName } })
+    const { data } = useQuery(CAT_QUALITIES_QUERY, { variables: { catName } })
     return data
   }
 
@@ -146,16 +146,86 @@ it('can be used to mock data for a hook', async () => {
   const { wrapper, link } = hookWrapperWithApolloMocks([
     {
       request: {
-        query: SIMPLE_QUERY,
+        query: CAT_QUALITIES_QUERY,
         variables: MATCH_ANY_PARAMETERS,
       },
       result: { data },
     },
   ])
-  const rendered = renderHook(() => useQueryOnce('tortand'), { wrapper })
+  const { result } = renderHook(() => useQueryOnce('tortand'), { wrapper })
   await act(() => link.waitForLastResponse())
-  expect(link.lastQueryMatches(SIMPLE_QUERY)).toBeTruthy()
+  expect(link.lastQueryMatches(CAT_QUALITIES_QUERY)).toBeTruthy()
   expect(link.lastQuery!.variables).toEqual({ catName: 'tortand' })
-  expect(rendered.result.current).toEqual(data)
+  expect(result.current).toEqual(data)
+})
+```
+
+### Testing subscriptions with multiple responses
+
+The `WildcardMockLink` provides a way to push new responses out to subscriptions. This can be used during tests to make it easier to test how components respond to subscription updates. The `sendWildcardSubscriptionResult` method can be used to send a new response which matches a wildcard mock, otherwise `sendSubscriptionResult` can be used. Here is an example:
+
+```typescript
+import { useQuery } from '@apollo/react-hooks'
+import { waitFor } from '@testing-library/react'
+import { renderHook, act as actHook } from '@testing-library/react-hooks'
+import gql from 'graphql-tag'
+import { MATCH_ANY_PARAMETERS, hookWrapperWithApolloMocks } from 'wildcard-mock-link'
+
+const MISCHIEF_SUBSCRIPTION = gql`
+  subscription($catName: String!) {
+    actsOfMischief(cats: $catName) {
+      description
+      severity
+    }
+  }
+`
+
+it('can push updates using the API', async () => {
+  const useActsOfMischief = (catName: string) => {
+    const { data } = useSubscription(MISCHIEF_SUBSCRIPTION, { variables: { catName } })
+    return data
+  }
+
+  const initialData = {
+    actsOfMischief: {
+      __typename: 'ActsOfMischief',
+      description: 'did not stay away from my bins',
+      severity: 'extreme',
+    },
+  }
+  const { wrapper, link } = hookWrapperWithApolloMocks([
+    {
+      request: {
+        query: MISCHIEF_SUBSCRIPTION,
+        variables: MATCH_ANY_PARAMETERS,
+      },
+      result: { data: initialData },
+    },
+  ])
+  const rendered = renderHook(() => useActsOfMischief('la don'), { wrapper })
+  expect(link.lastSubscriptionMatches(MISCHIEF_SUBSCRIPTION)).toBeTruthy()
+  expect(link.lastSubscription?.variables).toEqual({ catName: 'la don' })
+
+  await actHook(() =>
+    waitFor(() => {
+      expect(rendered.result.current).toEqual(initialData)
+    }),
+  )
+
+  const updateData = {
+    actsOfMischief: {
+      __typename: 'ActsOfMischief',
+      description: 'pushed that button',
+      severity: 'mild',
+    },
+  }
+  actHook(() => {
+    link.sendWildcardSubscriptionResult(MISCHIEF_SUBSCRIPTION, { data: updateData })
+  })
+  await actHook(() =>
+    waitFor(() => {
+      expect(rendered.result.current).toEqual(updateData)
+    }),
+  )
 })
 ```
