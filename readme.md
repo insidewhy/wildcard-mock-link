@@ -159,7 +159,7 @@ it('can be used to mock data for a hook', async () => {
     },
   ])
   const { result } = renderHook(() => useQueryOnce('tortand'), { wrapper })
-  await act(() => link.waitForLastResponse())
+  await actHook(() => link.waitForLastResponse())
   expect(link.lastQueryMatches(CAT_QUALITIES_QUERY)).toBeTruthy()
   expect(link.lastQuery!.variables).toEqual({ catName: 'tortand' })
   expect(result.current).toEqual(data)
