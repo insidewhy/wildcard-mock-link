@@ -8,6 +8,7 @@ export {
   withApolloMocks,
   hookWrapperWithApolloMocks,
   HookWrapperAndLink,
+  WildcardMockOptions,
 } from './utils'
 
 export const MATCH_ANY_PARAMETERS = Symbol()
