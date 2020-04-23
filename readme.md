@@ -4,9 +4,9 @@
 [![Known Vulnerabilities](https://snyk.io/test/github/insidewhy/wildcard-mock-link/badge.svg)](https://snyk.io/test/github/insidewhy/wildcard-mock-link)
 [![Renovate](https://img.shields.io/badge/renovate-enabled-brightgreen.svg)](https://renovatebot.com)
 
-WildcardMockLink is a replacement for `MockLink` which can:
+`WildcardMockLink` is a replacement for `MockLink` which can:
 
-- Match requests with any variables.
+- Match requests with arbitrary variables.
 - Provide mocks that match more than one request.
 - Mock subscriptions and push out subscription responses during a test via method calls.
 - Grab the latest mutation/query/subscription for use in test assertions.
@@ -15,7 +15,7 @@ WildcardMockLink is a replacement for `MockLink` which can:
 
 ### Wildcard queries
 
-The `MockLink` provided with apollo requires the variables for every matching query to be specified ahead of time. In certain circumstances this is not convenient, i.e. using the `MockedProvider` in storybooks. `WildcardMockLink` allows mocks to be specified that match a query with any variables, and these mocks can be configured to match more than once.
+The `MockLink` provided with apollo requires the variables for every matching query to be specified ahead of time. In certain circumstances this is not convenient, i.e. using the `MockedProvider` in storybook stories. `WildcardMockLink` allows mocks to be specified that match a query with any variables, and these mocks can be configured to match more than once.
 
 ```typescript
 const SIMPLE_QUERY = gql`
@@ -64,11 +64,17 @@ await link.waitForLastResponse()
 
 This can be used to ensure updates don't happen outside of `act`.
 
-### Testing hooks
+### Testing components with mock data
 
-This library provides a utility function `hookWrapperWithApolloMocks` for creating a wrapper object which can be used with `@testing-library/react-hooks`. It returns a `WildcardMockLink` and a `wrapper` and can be used in conjunction with the functionality mentioned above to create a test like this:
+This library provides a utility function `withApolloMocks` which can be used to created a component tree with access to mocked data. It returns the react element at the head of the component tree and a `WildcardMockLink` object and can be used in conjunction with the functionality mentioned above to create a test like this:
 
 ```typescript
+import { useQuery } from '@apollo/react-hooks'
+import { render, act } from '@testing-library/react'
+import gql from 'graphql-tag'
+import React, { FC } from 'react'
+import { MATCH_ANY_PARAMETERS, hookWrapperWithApolloMocks } from 'wildcard-mock-link'
+
 const SIMPLE_QUERY = gql`
   query($catName: String!) {
     qualities(cats: $catName) {
@@ -77,7 +83,55 @@ const SIMPLE_QUERY = gql`
   }
 `
 
-it('for a single request', async () => {
+it('can be used to mock data for a component tree', async () => {
+  const data = {
+    qualities: {
+      __typename: 'Qualities',
+      loveliness: 'very',
+    },
+  }
+
+  const { element, link } = withApolloMocks(
+    () => <MyCatComponent catName="mr bad actor face" />,
+    [
+      {
+        request: {
+          query: SIMPLE_QUERY,
+          variables: MATCH_ANY_PARAMETERS,
+        },
+        result: { data },
+      },
+    ],
+  )
+  const { getByRole } = render(element)
+  await act(() => link.waitForLastResponse())
+
+  expect(link.lastQueryMatches(SIMPLE_QUERY)).toBeTruthy()
+  expect(link.lastQuery?.variables).toEqual({ catName: 'mr bad actor face' })
+  const mainContent = getByRole('main')
+  expect(mainContent?.textContent).toEqual('Loveliness: very')
+})
+```
+
+### Testing hooks with mock data
+
+This library provides a utility function `hookWrapperWithApolloMocks` for creating a wrapper object which can be used with `@testing-library/react-hooks`. It returns a `WildcardMockLink` and a `wrapper` and can be used in conjunction with the functionality mentioned above to create a test like this:
+
+```typescript
+import { useQuery } from '@apollo/react-hooks'
+import { renderHook, act as actHook } from '@testing-library/react-hooks'
+import gql from 'graphql-tag'
+import { MATCH_ANY_PARAMETERS, hookWrapperWithApolloMocks } from 'wildcard-mock-link'
+
+const SIMPLE_QUERY = gql`
+  query($catName: String!) {
+    qualities(cats: $catName) {
+      loveliness
+    }
+  }
+`
+
+it('can be used to mock data for a hook', async () => {
   const useQueryOnce = (catName: string) => {
     const { data } = useQuery(SIMPLE_QUERY, { variables: { catName } })
     return data
