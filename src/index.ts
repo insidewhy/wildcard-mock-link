@@ -4,6 +4,8 @@ import { addTypenameToDocument } from 'apollo-utilities'
 import stringify from 'fast-json-stable-stringify'
 import { print, DocumentNode, OperationDefinitionNode } from 'graphql'
 
+export { withApolloMocks, hookWrapperWithApolloMocks } from './utils'
+
 export const MATCH_ANY_PARAMETERS = Symbol()
 
 export type GraphQLVariables = Record<string, any>

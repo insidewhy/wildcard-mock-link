@@ -1,14 +1,67 @@
 ---
+settings:
+  react:
+    version: 'detect'
 parser: '@typescript-eslint/parser'
 plugins:
   - '@typescript-eslint'
+  - 'react'
+  - 'react-hooks'
 extends:
   - 'plugin:@typescript-eslint/recommended'
+  - 'plugin:react/recommended'
   - eslint-config-prettier
+  - plugin:import/errors
+  - plugin:import/warnings
+  - plugin:import/typescript
 rules:
-  no-unused-vars:
+  no-use-before-define:
     - warn
+  '@typescript-eslint/interface-name-prefix':
+    - warn
+  '@typescript-eslint/no-use-before-define':
+    - warn
+  '@typescript-eslint/explicit-function-return-type':
+    - warn
+    - allowExpressions: true
+  '@typescript-eslint/no-unused-vars':
+    - warn
+    - argsIgnorePattern: '^_'
+  no-unused-expressions:
+    - error
+  no-underscore-dangle:
+    - warn
+    - enforceInMethodNames: true
+      allow:
+        - _id
+        - __typename
+  react/display-name:
+    - warn
+  react/prop-types:
+    - off
+  '@typescript-eslint/no-non-null-assertion':
+    - off
+  class-methods-use-this:
+    - error
+  import/order:
+    - error
+    - newlines-between: always
+      alphabetize:
+        order: asc
+      groups:
+        - - builtin
+          - external
+        - - parent
+          - sibling
+          - index
+  react-hooks/rules-of-hooks:
+    - error
+  react-hooks/exhaustive-deps:
+    - error
+  # conflicts with allowSyntheticDefaultImports tsconfig option
+  import/default:
+    - off
   '@typescript-eslint/member-delimiter-style':
-    - warn
+    - error
     - multiline:
         delimiter: none
