@@ -44,7 +44,7 @@ return (
 )
 ```
 
-The above mocked provider will match two requests for `CAT_QUALITIES_QUERY` no matter what the variables are due to `nMatches: 2`. If `nMatches` is omitted then the mock will match an infinite number of requests.
+The above mocked provider will match two requests for `CAT_QUALITIES_QUERY` no matter what the variables are. Here `nMatches` is used to restrict the mock to the first two requests that match, when `nMatches` is omitted the mock will match an infinite number of requests.
 
 ### Asserting against the latest request/mutation/subscription.
 
