@@ -1,4 +1,5 @@
 import { MockedProvider } from '@apollo/react-testing'
+import { ApolloCache } from 'apollo-cache'
 import React, { FC, ReactElement } from 'react'
 
 import { WildcardMockLink, MockedResponses } from '.'
@@ -8,22 +9,27 @@ export interface MockLinkAndElement {
   element: ReactElement
 }
 
-export interface WildcardMockOptions {
+export interface WildcardMockOptions<TSerializedCache = {}> {
   addTypename?: boolean
+  cache?: ApolloCache<TSerializedCache>
 }
 
 /**
  * Render a test with an apollo provider and the provided mocks.
  */
-export const withApolloMocks = (
+export function withApolloMocks<TSerializedCache = {}>(
   testComponentFactory: () => ReactElement,
   apolloMocks: MockedResponses = [],
-  options: WildcardMockOptions = { addTypename: true },
-): MockLinkAndElement => {
+  options: WildcardMockOptions<TSerializedCache> = { addTypename: true },
+): MockLinkAndElement {
   const link = new WildcardMockLink(apolloMocks)
 
   const element = (
-    <MockedProvider addTypename={options.addTypename} link={link}>
+    <MockedProvider
+      addTypename={options.addTypename}
+      link={link}
+      cache={options.cache}
+    >
       {testComponentFactory()}
     </MockedProvider>
   )

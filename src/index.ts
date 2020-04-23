@@ -4,7 +4,11 @@ import { addTypenameToDocument } from 'apollo-utilities'
 import stringify from 'fast-json-stable-stringify'
 import { print, DocumentNode, OperationDefinitionNode } from 'graphql'
 
-export { withApolloMocks, hookWrapperWithApolloMocks } from './utils'
+export {
+  withApolloMocks,
+  hookWrapperWithApolloMocks,
+  HookWrapperAndLink,
+} from './utils'
 
 export const MATCH_ANY_PARAMETERS = Symbol()
 
@@ -54,7 +58,7 @@ interface StoredOperation {
   context: GraphQLVariables
 }
 
-const toStoredOperation = (op: Operation) => ({
+const toStoredOperation = (op: Operation): StoredOperation => ({
   query: op.query,
   variables: op.variables,
   context: op.getContext(),

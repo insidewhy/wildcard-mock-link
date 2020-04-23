@@ -1,6 +1,6 @@
 {
   "name": "wildcard-mock-link",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "apollo client mocking",
   "author": "insidewhy <github@chilon.net>",
   "license": "ISC",
