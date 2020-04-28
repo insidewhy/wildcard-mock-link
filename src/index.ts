@@ -1,5 +1,11 @@
-import { MockLink, MockedResponse } from '@apollo/react-testing'
-import { Operation, FetchResult, Observable, GraphQLRequest } from 'apollo-link'
+import { MockedResponse } from '@apollo/react-testing'
+import {
+  Operation,
+  FetchResult,
+  Observable,
+  GraphQLRequest,
+  ApolloLink,
+} from 'apollo-link'
 import { addTypenameToDocument } from 'apollo-utilities'
 import stringify from 'fast-json-stable-stringify'
 import { print, DocumentNode, OperationDefinitionNode } from 'graphql'
@@ -27,21 +33,14 @@ export interface WildcardMockedResponse
   nMatches?: number
 }
 
+type MockedResponseWithoutRequest = Omit<MockedResponse, 'request'>
+
 export type MockedResponses = ReadonlyArray<
   WildcardMockedResponse | MockedResponse
 >
 
-interface WildcardMock {
-  result: FetchResult | (() => FetchResult) | undefined
-  // by default a mock will match an infinite number of requests
+interface WildcardMock extends MockedResponseWithoutRequest {
   nMatches: number
-  delay: number
-}
-
-function notWildcard(
-  mock: WildcardMockedResponse | MockedResponse,
-): mock is MockedResponse {
-  return mock.request.variables !== MATCH_ANY_PARAMETERS
 }
 
 function isWildcard(
@@ -66,27 +65,55 @@ const toStoredOperation = (op: Operation): StoredOperation => ({
   context: op.getContext(),
 })
 
+type FetchResultObserver = ZenObservable.SubscriptionObserver<FetchResult>
+
+const forwardResponseToObserver = (
+  observer: FetchResultObserver,
+  response: MockedResponseWithoutRequest,
+  complete: boolean,
+): void => {
+  const { result, error, delay } = response
+  if (result) {
+    setTimeout(() => {
+      observer.next(getResultFromFetchResult(result))
+      if (complete) {
+        observer.complete()
+      }
+    }, delay)
+  } else if (error) {
+    setTimeout(() => {
+      observer.error(error)
+    }, delay)
+  }
+}
+
 /**
  * Extends MockLink to provide the ability to match request queries independent
  * of their variables and have them match 1 or more responses. Also stores the
  * last request for use in assertion frameworks.
  */
-export class WildcardMockLink extends MockLink {
+export class WildcardMockLink extends ApolloLink {
   private wildcardMatches = new Map<string, WildcardMock[]>()
+  private regularMatches = new Map<string, MockedResponse[]>()
+
   public lastQuery?: StoredOperation
   public lastMutation?: StoredOperation
   public lastSubscription?: StoredOperation
 
   private lastResponse?: Promise<void>
 
-  private openSubscriptions = new Map<
-    string,
-    ZenObservable.SubscriptionObserver<FetchResult>
-  >()
+  private openSubscriptions = new Map<string, FetchResultObserver>()
 
-  constructor(mockedResponses: MockedResponses, addTypename?: boolean) {
-    super(mockedResponses.filter(notWildcard), addTypename)
-    this.addWildcardMockedResponse(...mockedResponses.filter(isWildcard))
+  constructor(mockedResponses: MockedResponses, public addTypename = true) {
+    super()
+
+    mockedResponses.forEach((mockedResponse) => {
+      if (isWildcard(mockedResponse)) {
+        this.addWildcardMockedResponse(mockedResponse)
+      } else {
+        this.addMockedResponse(mockedResponse)
+      }
+    })
   }
 
   request(op: Operation): Observable<FetchResult> | null {
@@ -105,19 +132,27 @@ export class WildcardMockLink extends MockLink {
 
     const wildcardMock = this.getWildcardMockMatch(op)
     if (wildcardMock) {
+      if (!wildcardMock.error && !wildcardMock.result) {
+        throw new Error('Must provide error or result for query/mutation mocks')
+      }
+
       const response = new Observable<FetchResult>((observer) => {
-        const { result } = wildcardMock
-        if (result) {
-          setTimeout(() => {
-            observer.next(getResultFromFetchResult(result))
-            observer.complete()
-          }, wildcardMock.delay)
-        }
+        forwardResponseToObserver(observer, wildcardMock, true)
       })
       this.setLastResponsePromiseFromObservable(response)
       return response
     } else {
-      const response = super.request(op)
+      const regularMock = this.getRegularMockMatch(op)
+      if (!regularMock) {
+        throw new Error('No mocks matched')
+      } else if (!regularMock.error && !regularMock.result) {
+        throw new Error('Must provide error or result for query/mutation mocks')
+      }
+
+      const response = new Observable<FetchResult>((observer) => {
+        forwardResponseToObserver(observer, regularMock, true)
+      })
+
       this.setLastResponsePromiseFromObservable(response)
       return response
     }
@@ -128,33 +163,24 @@ export class WildcardMockLink extends MockLink {
 
     const wildcardMock = this.getWildcardMockMatch(op)
     if (wildcardMock) {
-      return new Observable<FetchResult>((subscriber) => {
-        this.openSubscriptions.set(this.queryToString(op.query), subscriber)
-        const { result } = wildcardMock
-        if (result) {
-          setTimeout(() => {
-            // if there are multiple wildcard match subscriptions for the same
-            // request the last one will be lost
-            subscriber.next(getResultFromFetchResult(result))
-          }, wildcardMock.delay)
-        }
+      return new Observable<FetchResult>((observer) => {
+        this.openSubscriptions.set(this.queryToString(op.query), observer)
+        forwardResponseToObserver(observer, wildcardMock, false)
       })
     } else {
-      const response = super.request(op)
-      if (!response) {
-        return null
+      const regularMock = this.getRegularMockMatch(op)
+      if (!regularMock) {
+        throw new Error('No mocks matched')
       }
 
-      return new Observable<FetchResult>((subscriber) => {
+      return new Observable<FetchResult>((observer) => {
         // if there are multiple subscriptions for the same request with the
         // same variables, the last one will be lost
         this.openSubscriptions.set(
           this.queryAndVariablesToString(op.query, op.variables),
-          subscriber,
+          observer,
         )
-        response.subscribe((value) => {
-          subscriber.next(value)
-        })
+        forwardResponseToObserver(observer, regularMock, false)
       })
     }
   }
@@ -234,6 +260,21 @@ export class WildcardMockLink extends MockLink {
     })
   }
 
+  addMockedResponse(...responses: MockedResponse[]): void {
+    responses.forEach((response) => {
+      const mockKey = this.queryAndVariablesToString(
+        response.request.query,
+        response.request.variables,
+      )
+      const matchesForKey = this.regularMatches.get(mockKey)
+      if (matchesForKey) {
+        matchesForKey.push(response)
+      } else {
+        this.regularMatches.set(mockKey, [response])
+      }
+    })
+  }
+
   /**
    * Remove the wildcard mocked response for `request`.
    */
@@ -297,7 +338,7 @@ export class WildcardMockLink extends MockLink {
    * decrementing its match count) as necessary.
    */
   private getWildcardMockMatch(op: Operation): WildcardMock | undefined {
-    const mockKey = print(op.query)
+    const mockKey = this.queryToString(op.query)
     const mocks = this.wildcardMatches.get(mockKey)
 
     if (!mocks) {
@@ -312,6 +353,12 @@ export class WildcardMockLink extends MockLink {
       }
     }
     return nextMock
+  }
+
+  private getRegularMockMatch(op: Operation): MockedResponse | undefined {
+    const mockKey = this.queryAndVariablesToString(op.query, op.variables)
+    const mocks = this.regularMatches.get(mockKey)
+    return mocks?.shift()
   }
 
   private setLastResponsePromiseFromObservable(

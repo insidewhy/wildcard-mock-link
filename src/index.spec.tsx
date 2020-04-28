@@ -21,70 +21,102 @@ const CAT_QUALITIES_QUERY = gql`
 `
 
 describe('WildcardMockLink', () => {
-  describe('handles wildcard queries', () => {
-    it('for a single request', async () => {
-      const useQueryOnce = (catName: string) => {
-        const { data } = useQuery(CAT_QUALITIES_QUERY, {
-          variables: { catName },
-        })
-        return data
-      }
+  describe('can be used for non-subscription queries', () => {
+    const useQueryOnce = (catName: string) => {
+      const { data } = useQuery(CAT_QUALITIES_QUERY, {
+        variables: { catName },
+      })
+      return data
+    }
 
-      const data = {
-        qualities: {
-          __typename: 'Qualities',
-          loveliness: 'very',
-        },
-      }
-      const { wrapper, link } = hookWrapperWithApolloMocks([
-        {
-          request: {
-            query: CAT_QUALITIES_QUERY,
-            variables: MATCH_ANY_PARAMETERS,
+    describe('handles non-wildcard queries', () => {
+      it('for a single request', async () => {
+        const variables = { catName: 'Lord Fromtar' }
+        const data = {
+          qualities: {
+            __typename: 'Qualities',
+            loveliness: 'very',
           },
-          result: { data },
-        },
-      ])
-      const { result } = renderHook(() => useQueryOnce('tortand'), { wrapper })
-      await actHook(() => link.waitForLastResponse())
-      expect(link.lastQueryMatches(CAT_QUALITIES_QUERY)).toBeTruthy()
-      expect(link.lastQuery?.variables).toEqual({ catName: 'tortand' })
-      expect(result.current).toEqual(data)
+        }
+        const { wrapper, link } = hookWrapperWithApolloMocks([
+          {
+            request: {
+              query: CAT_QUALITIES_QUERY,
+              variables,
+            },
+            result: { data },
+          },
+        ])
+        const { result } = renderHook(() => useQueryOnce(variables.catName), {
+          wrapper,
+        })
+        await actHook(() => link.waitForLastResponse())
+        expect(link.lastQueryMatches(CAT_QUALITIES_QUERY)).toBeTruthy()
+        expect(link.lastQuery?.variables).toEqual(variables)
+        expect(result.current).toEqual(data)
+      })
     })
 
-    it('for multiple requests with the same mock', async () => {
-      const useQueryTwice = () => {
-        const { data: firstData } = useQuery(CAT_QUALITIES_QUERY, {
-          variables: { catName: 'snorf' },
-        })
-        const { data: secondData } = useQuery(CAT_QUALITIES_QUERY, {
-          variables: { catName: 'candrle' },
-        })
-        return { firstData, secondData }
-      }
-
-      const data = {
-        qualities: {
-          __typename: 'Qualities',
-          loveliness: 'highest',
-        },
-      }
-      const { wrapper, link } = hookWrapperWithApolloMocks([
-        {
-          request: {
-            query: CAT_QUALITIES_QUERY,
-            variables: MATCH_ANY_PARAMETERS,
+    describe('handles wildcard queries', () => {
+      it('for a single request', async () => {
+        const data = {
+          qualities: {
+            __typename: 'Qualities',
+            loveliness: 'very',
           },
-          result: { data },
-        },
-      ])
-      const rendered = renderHook(useQueryTwice, { wrapper })
-      await actHook(() => link.waitForLastResponse())
-      expect(link.lastQueryMatches(CAT_QUALITIES_QUERY)).toBeTruthy()
-      expect(link.lastQuery?.variables).toEqual({ catName: 'candrle' })
-      expect(rendered.result.current).toEqual({
-        firstData: data,
-        secondData: data,
+        }
+        const { wrapper, link } = hookWrapperWithApolloMocks([
+          {
+            request: {
+              query: CAT_QUALITIES_QUERY,
+              variables: MATCH_ANY_PARAMETERS,
+            },
+            result: { data },
+          },
+        ])
+        const { result } = renderHook(() => useQueryOnce('tortand'), {
+          wrapper,
+        })
+        await actHook(() => link.waitForLastResponse())
+        expect(link.lastQueryMatches(CAT_QUALITIES_QUERY)).toBeTruthy()
+        expect(link.lastQuery?.variables).toEqual({ catName: 'tortand' })
+        expect(result.current).toEqual(data)
+      })
+
+      it('for multiple requests with the same mock', async () => {
+        const useQueryTwice = () => {
+          const { data: firstData } = useQuery(CAT_QUALITIES_QUERY, {
+            variables: { catName: 'snorf' },
+          })
+          const { data: secondData } = useQuery(CAT_QUALITIES_QUERY, {
+            variables: { catName: 'candrle' },
+          })
+          return { firstData, secondData }
+        }
+
+        const data = {
+          qualities: {
+            __typename: 'Qualities',
+            loveliness: 'highest',
+          },
+        }
+        const { wrapper, link } = hookWrapperWithApolloMocks([
+          {
+            request: {
+              query: CAT_QUALITIES_QUERY,
+              variables: MATCH_ANY_PARAMETERS,
+            },
+            result: { data },
+          },
+        ])
+        const rendered = renderHook(useQueryTwice, { wrapper })
+        await actHook(() => link.waitForLastResponse())
+        expect(link.lastQueryMatches(CAT_QUALITIES_QUERY)).toBeTruthy()
+        expect(link.lastQuery?.variables).toEqual({ catName: 'candrle' })
+        expect(rendered.result.current).toEqual({
+          firstData: data,
+          secondData: data,
+        })
       })
     })
   })
@@ -230,6 +262,42 @@ describe('WildcardMockLink', () => {
       }
       actHook(() => {
         link.sendWildcardSubscriptionResult(MISCHIEF_SUBSCRIPTION, {
+          data: updateData,
+        })
+      })
+      await actHook(() =>
+        waitFor(() => {
+          expect(rendered.result.current).toEqual(updateData)
+        }),
+      )
+    })
+
+    it('by pushing an update without an "initial response" for non-wildcard match', async () => {
+      const variables = { catName: 'Tupon The Bravest' }
+      const { wrapper, link } = hookWrapperWithApolloMocks([
+        {
+          request: {
+            query: MISCHIEF_SUBSCRIPTION,
+            variables,
+          },
+          result: undefined,
+        },
+      ])
+      const rendered = renderHook(() => useActsOfMischief(variables.catName), {
+        wrapper,
+      })
+      expect(link.lastSubscriptionMatches(MISCHIEF_SUBSCRIPTION)).toBeTruthy()
+      expect(link.lastSubscription?.variables).toEqual(variables)
+
+      const updateData = {
+        actsOfMischief: {
+          __typename: 'ActsOfMischief',
+          description: 'OMG the WORLD is on FIRE',
+          severity: 'mild',
+        },
+      }
+      actHook(() => {
+        link.sendSubscriptionResult(MISCHIEF_SUBSCRIPTION, variables, {
           data: updateData,
         })
       })
