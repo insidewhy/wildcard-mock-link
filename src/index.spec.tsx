@@ -106,7 +106,8 @@ describe('WildcardMockLink', () => {
       return data
     }
 
-    it('by pushing updates via the API', async () => {
+    it('by pushing updates with sendWildcardSubscriptionResult for wildcard match', async () => {
+      const variables = { catName: 'la don' }
       const initialData = {
         actsOfMischief: {
           __typename: 'ActsOfMischief',
@@ -123,11 +124,11 @@ describe('WildcardMockLink', () => {
           result: { data: initialData },
         },
       ])
-      const rendered = renderHook(() => useActsOfMischief('la don'), {
+      const rendered = renderHook(() => useActsOfMischief(variables.catName), {
         wrapper,
       })
       expect(link.lastSubscriptionMatches(MISCHIEF_SUBSCRIPTION)).toBeTruthy()
-      expect(link.lastSubscription?.variables).toEqual({ catName: 'la don' })
+      expect(link.lastSubscription?.variables).toEqual(variables)
 
       await actHook(() =>
         waitFor(() => {
@@ -154,7 +155,57 @@ describe('WildcardMockLink', () => {
       )
     })
 
+    it('by pushing updates with sendSubscriptionResult for non-wildcard match', async () => {
+      const variables = { catName: 'Toast Inside' }
+      const initialData = {
+        actsOfMischief: {
+          __typename: 'ActsOfMischief',
+          description: 'did not stay away from my bins',
+          severity: 'extreme',
+        },
+      }
+      const { wrapper, link } = hookWrapperWithApolloMocks([
+        {
+          request: {
+            query: MISCHIEF_SUBSCRIPTION,
+            variables,
+          },
+          result: { data: initialData },
+        },
+      ])
+      const rendered = renderHook(() => useActsOfMischief(variables.catName), {
+        wrapper,
+      })
+      expect(link.lastSubscriptionMatches(MISCHIEF_SUBSCRIPTION)).toBeTruthy()
+      expect(link.lastSubscription?.variables).toEqual(variables)
+
+      await actHook(() =>
+        waitFor(() => {
+          expect(rendered.result.current).toEqual(initialData)
+        }),
+      )
+
+      const updateData = {
+        actsOfMischief: {
+          __typename: 'ActsOfMischief',
+          description: 'in love',
+          severity: 'awesome',
+        },
+      }
+      actHook(() => {
+        link.sendSubscriptionResult(MISCHIEF_SUBSCRIPTION, variables, {
+          data: updateData,
+        })
+      })
+      await actHook(() =>
+        waitFor(() => {
+          expect(rendered.result.current).toEqual(updateData)
+        }),
+      )
+    })
+
     it('by pushing an update without an "initial response" for wildcard match', async () => {
+      const variables = { catName: 'Mr Box' }
       const { wrapper, link } = hookWrapperWithApolloMocks([
         {
           request: {
@@ -164,16 +215,16 @@ describe('WildcardMockLink', () => {
           result: undefined,
         },
       ])
-      const rendered = renderHook(() => useActsOfMischief('la don'), {
+      const rendered = renderHook(() => useActsOfMischief(variables.catName), {
         wrapper,
       })
       expect(link.lastSubscriptionMatches(MISCHIEF_SUBSCRIPTION)).toBeTruthy()
-      expect(link.lastSubscription?.variables).toEqual({ catName: 'la don' })
+      expect(link.lastSubscription?.variables).toEqual(variables)
 
       const updateData = {
         actsOfMischief: {
           __typename: 'ActsOfMischief',
-          description: 'pushed that button',
+          description: 'cranky',
           severity: 'mild',
         },
       }
