@@ -129,12 +129,12 @@ export class WildcardMockLink extends MockLink {
     const wildcardMock = this.getWildcardMockMatch(op)
     if (wildcardMock) {
       return new Observable<FetchResult>((subscriber) => {
+        this.openSubscriptions.set(this.queryToString(op.query), subscriber)
         const { result } = wildcardMock
         if (result) {
           setTimeout(() => {
             // if there are multiple wildcard match subscriptions for the same
             // request the last one will be lost
-            this.openSubscriptions.set(this.queryToString(op.query), subscriber)
             subscriber.next(getResultFromFetchResult(result))
           }, wildcardMock.delay)
         }

@@ -4,7 +4,11 @@ import { renderHook, act as actHook } from '@testing-library/react-hooks'
 import gql from 'graphql-tag'
 import React, { FC } from 'react'
 
-import { MATCH_ANY_PARAMETERS, hookWrapperWithApolloMocks, withApolloMocks } from '.'
+import {
+  MATCH_ANY_PARAMETERS,
+  hookWrapperWithApolloMocks,
+  withApolloMocks,
+} from '.'
 
 /* eslint-disable @typescript-eslint/explicit-function-return-type */
 
@@ -20,7 +24,9 @@ describe('WildcardMockLink', () => {
   describe('handles wildcard queries', () => {
     it('for a single request', async () => {
       const useQueryOnce = (catName: string) => {
-        const { data } = useQuery(CAT_QUALITIES_QUERY, { variables: { catName } })
+        const { data } = useQuery(CAT_QUALITIES_QUERY, {
+          variables: { catName },
+        })
         return data
       }
 
@@ -76,7 +82,10 @@ describe('WildcardMockLink', () => {
       await actHook(() => link.waitForLastResponse())
       expect(link.lastQueryMatches(CAT_QUALITIES_QUERY)).toBeTruthy()
       expect(link.lastQuery?.variables).toEqual({ catName: 'candrle' })
-      expect(rendered.result.current).toEqual({ firstData: data, secondData: data })
+      expect(rendered.result.current).toEqual({
+        firstData: data,
+        secondData: data,
+      })
     })
   })
 
@@ -90,12 +99,14 @@ describe('WildcardMockLink', () => {
       }
     `
 
-    it('by pushing updates via the API', async () => {
-      const useActsOfMischief = (catName: string) => {
-        const { data } = useSubscription(MISCHIEF_SUBSCRIPTION, { variables: { catName } })
-        return data
-      }
+    const useActsOfMischief = (catName: string) => {
+      const { data } = useSubscription(MISCHIEF_SUBSCRIPTION, {
+        variables: { catName },
+      })
+      return data
+    }
 
+    it('by pushing updates via the API', async () => {
       const initialData = {
         actsOfMischief: {
           __typename: 'ActsOfMischief',
@@ -112,7 +123,9 @@ describe('WildcardMockLink', () => {
           result: { data: initialData },
         },
       ])
-      const rendered = renderHook(() => useActsOfMischief('la don'), { wrapper })
+      const rendered = renderHook(() => useActsOfMischief('la don'), {
+        wrapper,
+      })
       expect(link.lastSubscriptionMatches(MISCHIEF_SUBSCRIPTION)).toBeTruthy()
       expect(link.lastSubscription?.variables).toEqual({ catName: 'la don' })
 
@@ -130,7 +143,44 @@ describe('WildcardMockLink', () => {
         },
       }
       actHook(() => {
-        link.sendWildcardSubscriptionResult(MISCHIEF_SUBSCRIPTION, { data: updateData })
+        link.sendWildcardSubscriptionResult(MISCHIEF_SUBSCRIPTION, {
+          data: updateData,
+        })
+      })
+      await actHook(() =>
+        waitFor(() => {
+          expect(rendered.result.current).toEqual(updateData)
+        }),
+      )
+    })
+
+    it('by pushing an update without an "initial response" for wildcard match', async () => {
+      const { wrapper, link } = hookWrapperWithApolloMocks([
+        {
+          request: {
+            query: MISCHIEF_SUBSCRIPTION,
+            variables: MATCH_ANY_PARAMETERS,
+          },
+          result: undefined,
+        },
+      ])
+      const rendered = renderHook(() => useActsOfMischief('la don'), {
+        wrapper,
+      })
+      expect(link.lastSubscriptionMatches(MISCHIEF_SUBSCRIPTION)).toBeTruthy()
+      expect(link.lastSubscription?.variables).toEqual({ catName: 'la don' })
+
+      const updateData = {
+        actsOfMischief: {
+          __typename: 'ActsOfMischief',
+          description: 'pushed that button',
+          severity: 'mild',
+        },
+      }
+      actHook(() => {
+        link.sendWildcardSubscriptionResult(MISCHIEF_SUBSCRIPTION, {
+          data: updateData,
+        })
       })
       await actHook(() =>
         waitFor(() => {
