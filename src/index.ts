@@ -29,7 +29,7 @@ export type GraphQLVariables = Record<string, any>
 
 export interface GraphQLRequestWithWildcard
   extends Omit<GraphQLRequest, 'variables'> {
-  variables?: GraphQLRequest['variables'] | symbol
+  variables?: GraphQLRequest['variables'] | typeof MATCH_ANY_PARAMETERS
 }
 
 export interface WildcardMockedResponse
