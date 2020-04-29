@@ -307,6 +307,54 @@ describe('WildcardMockLink', () => {
         }),
       )
     })
+
+    it('by pushing an update without an "initial response" for non-wildcard match without variables', async () => {
+      const CUDDLES_SUBSCRIPTION = gql`
+        subscription {
+          cuddles {
+            description
+            severity
+          }
+        }
+      `
+
+      const useCuddles = () => {
+        const { data } = useSubscription(CUDDLES_SUBSCRIPTION)
+        return data
+      }
+
+      const { wrapper, link } = hookWrapperWithApolloMocks([
+        {
+          request: {
+            query: CUDDLES_SUBSCRIPTION,
+          },
+          result: undefined,
+        },
+      ])
+      const rendered = renderHook(() => useCuddles(), {
+        wrapper,
+      })
+      expect(link.lastSubscriptionMatches(CUDDLES_SUBSCRIPTION)).toBeTruthy()
+
+      const updateData = {
+        cuddles: {
+          __typename: 'Cuddles',
+          description: 'Lovingly',
+          severity: 'mild',
+        },
+      }
+
+      actHook(() => {
+        link.sendSubscriptionResult(CUDDLES_SUBSCRIPTION, undefined, {
+          data: updateData,
+        })
+      })
+      await actHook(() =>
+        waitFor(() => {
+          expect(rendered.result.current).toEqual(updateData)
+        }),
+      )
+    })
   })
 })
 
