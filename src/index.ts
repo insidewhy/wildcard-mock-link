@@ -8,7 +8,12 @@ import {
 } from 'apollo-link'
 import { addTypenameToDocument } from 'apollo-utilities'
 import stringify from 'fast-json-stable-stringify'
-import { print, DocumentNode, OperationDefinitionNode } from 'graphql'
+import {
+  print,
+  DocumentNode,
+  OperationDefinitionNode,
+  DefinitionNode,
+} from 'graphql'
 
 export {
   withApolloMocks,
@@ -87,6 +92,12 @@ const forwardResponseToObserver = (
   }
 }
 
+function isOperationDefinitionNode(
+  node: DefinitionNode,
+): node is OperationDefinitionNode {
+  return (node as OperationDefinitionNode).operation !== undefined
+}
+
 /**
  * Extends MockLink to provide the ability to match request queries independent
  * of their variables and have them match 1 or more responses. Also stores the
@@ -117,8 +128,8 @@ export class WildcardMockLink extends ApolloLink {
   }
 
   request(op: Operation): Observable<FetchResult> | null {
-    const operationType = (op.query.definitions?.[0] as OperationDefinitionNode)
-      ?.operation
+    const opDefNode = op.query.definitions.find(isOperationDefinitionNode)
+    const operationType = opDefNode?.operation
 
     if (operationType === 'subscription') {
       return this.requestSubscription(op)
