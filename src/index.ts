@@ -7,6 +7,7 @@ import {
   ApolloLink,
 } from 'apollo-link'
 import { addTypenameToDocument } from 'apollo-utilities'
+import delay from 'delay'
 import stringify from 'fast-json-stable-stringify'
 import {
   print,
@@ -111,6 +112,7 @@ export class WildcardMockLink extends ApolloLink {
   public lastMutation?: StoredOperation
   public lastSubscription?: StoredOperation
 
+  private pendingResponses = new Set<Promise<void>>()
   private lastResponse?: Promise<void>
 
   private openSubscriptions = new Map<string, FetchResultObserver>()
@@ -333,6 +335,30 @@ export class WildcardMockLink extends ApolloLink {
     return this.lastResponse ?? Promise.resolve()
   }
 
+  /**
+   * Wait for the all responses that are currently pending.
+   */
+  waitForAllResponses(): Promise<void> {
+    return (Promise.all(
+      Array.from(this.pendingResponses),
+    ) as unknown) as Promise<void>
+  }
+
+  /**
+   * Wait for all responses that are currently pending, and all responses that are triggered
+   * as a result of those responses being sent.
+   */
+  async waitForAllResponsesRecursively(): Promise<void> {
+    if (!this.pendingResponses.size) {
+      return
+    }
+
+    await this.waitForAllResponses()
+    // allow code to issue new requests within the next tick
+    await delay(0)
+    await this.waitForAllResponsesRecursively()
+  }
+
   private queryToString(query: DocumentNode): string {
     return print(this.addTypename ? addTypenameToDocument(query) : query)
   }
@@ -376,11 +402,15 @@ export class WildcardMockLink extends ApolloLink {
     observable?: Observable<FetchResult> | null,
   ): void {
     if (observable) {
-      this.lastResponse = new Promise((resolve) => {
+      const responsePromise = new Promise<void>((resolve) => {
         observable.subscribe(() => {
           resolve()
+          this.pendingResponses.delete(responsePromise)
         })
       })
+
+      this.lastResponse = responsePromise
+      this.pendingResponses.add(responsePromise)
     }
   }
 }
