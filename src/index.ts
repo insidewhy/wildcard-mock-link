@@ -108,9 +108,19 @@ export class WildcardMockLink extends ApolloLink {
   private wildcardMatches = new Map<string, WildcardMock[]>()
   private regularMatches = new Map<string, MockedResponse[]>()
 
-  public lastQuery?: StoredOperation
-  public lastMutation?: StoredOperation
-  public lastSubscription?: StoredOperation
+  queries: StoredOperation[] = []
+  mutations: StoredOperation[] = []
+  subscriptions: StoredOperation[] = []
+
+  get lastQuery(): StoredOperation | undefined {
+    return this.queries[this.queries.length - 1]
+  }
+  get lastMutation(): StoredOperation | undefined {
+    return this.mutations[this.mutations.length - 1]
+  }
+  get lastSubscription(): StoredOperation | undefined {
+    return this.subscriptions[this.subscriptions.length - 1]
+  }
 
   private pendingResponses = new Set<Promise<void>>()
   private lastResponse?: Promise<void>
@@ -138,9 +148,9 @@ export class WildcardMockLink extends ApolloLink {
     }
 
     if (operationType === 'mutation') {
-      this.lastMutation = toStoredOperation(op)
+      this.mutations.push(toStoredOperation(op))
     } else {
-      this.lastQuery = toStoredOperation(op)
+      this.queries.push(toStoredOperation(op))
     }
 
     const wildcardMock = this.getWildcardMockMatch(op)
@@ -172,7 +182,7 @@ export class WildcardMockLink extends ApolloLink {
   }
 
   requestSubscription(op: Operation): Observable<FetchResult> | null {
-    this.lastSubscription = toStoredOperation(op)
+    this.subscriptions.push(toStoredOperation(op))
 
     const wildcardMock = this.getWildcardMockMatch(op)
     if (wildcardMock) {
