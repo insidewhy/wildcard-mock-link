@@ -356,6 +356,60 @@ describe('WildcardMockLink', () => {
       )
     })
   })
+
+  describe('provides waitForAllResponsesRecursively() method', () => {
+    it('which returns after all responses have been issued', async () => {
+      const catNames = ['Jombar', 'The Rogue', 'Rodmaster']
+
+      const useThreeQueries = () => {
+        const { data: firstData } = useQuery(CAT_QUALITIES_QUERY, {
+          variables: { catName: catNames[0] },
+        })
+
+        const { data: secondData } = useQuery(CAT_QUALITIES_QUERY, {
+          variables: { catName: catNames[1] },
+          skip: !firstData,
+        })
+
+        const { data: thirdData } = useQuery(CAT_QUALITIES_QUERY, {
+          variables: { catName: catNames[2] },
+          skip: !firstData || !secondData,
+        })
+
+        return [firstData, secondData, thirdData]
+      }
+
+      const { wrapper, link } = hookWrapperWithApolloMocks(
+        catNames.map((catName) => ({
+          request: {
+            query: CAT_QUALITIES_QUERY,
+            variables: { catName },
+          },
+          result: {
+            data: {
+              qualities: {
+                __typename: 'Qualities',
+                loveliness: `${catName} quality`,
+              },
+            },
+          },
+        })),
+      )
+
+      const { result } = renderHook(useThreeQueries, {
+        wrapper,
+      })
+      await actHook(() => link.waitForAllResponsesRecursively())
+      expect(result.current).toEqual(
+        catNames.map((catName) => ({
+          qualities: {
+            loveliness: `${catName} quality`,
+            __typename: 'Qualities',
+          },
+        })),
+      )
+    })
+  })
 })
 
 describe('withApolloMocks utility', () => {

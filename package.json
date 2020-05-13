@@ -1,6 +1,6 @@
 {
   "name": "wildcard-mock-link",
-  "version": "1.0.9",
+  "version": "1.0.10",
   "description": "apollo client mocking",
   "author": "insidewhy <github@chilon.net>",
   "license": "ISC",
@@ -41,6 +41,7 @@
   },
   "dependencies": {
     "apollo-utilities": "^1.3.3",
+    "delay": "^4.3.0",
     "fast-json-stable-stringify": "^2.1.0"
   },
   "devDependencies": {
