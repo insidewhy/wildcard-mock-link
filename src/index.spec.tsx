@@ -162,11 +162,9 @@ describe('WildcardMockLink', () => {
       expect(link.lastSubscriptionMatches(MISCHIEF_SUBSCRIPTION)).toBeTruthy()
       expect(link.lastSubscription?.variables).toEqual(variables)
 
-      await actHook(() =>
-        waitFor(() => {
-          expect(rendered.result.current).toEqual(initialData)
-        }),
-      )
+      await waitFor(() => {
+        expect(rendered.result.current).toEqual(initialData)
+      })
 
       const updateData = {
         actsOfMischief: {
@@ -180,11 +178,9 @@ describe('WildcardMockLink', () => {
           data: updateData,
         })
       })
-      await actHook(() =>
-        waitFor(() => {
-          expect(rendered.result.current).toEqual(updateData)
-        }),
-      )
+      await waitFor(() => {
+        expect(rendered.result.current).toEqual(updateData)
+      })
     })
 
     it('by pushing updates with sendSubscriptionResult for non-wildcard match', async () => {
@@ -211,11 +207,9 @@ describe('WildcardMockLink', () => {
       expect(link.lastSubscriptionMatches(MISCHIEF_SUBSCRIPTION)).toBeTruthy()
       expect(link.lastSubscription?.variables).toEqual(variables)
 
-      await actHook(() =>
-        waitFor(() => {
-          expect(rendered.result.current).toEqual(initialData)
-        }),
-      )
+      await waitFor(() => {
+        expect(rendered.result.current).toEqual(initialData)
+      })
 
       const updateData = {
         actsOfMischief: {
@@ -229,11 +223,9 @@ describe('WildcardMockLink', () => {
           data: updateData,
         })
       })
-      await actHook(() =>
-        waitFor(() => {
-          expect(rendered.result.current).toEqual(updateData)
-        }),
-      )
+      await waitFor(() => {
+        expect(rendered.result.current).toEqual(updateData)
+      })
     })
 
     it('by pushing an update without an "initial response" for wildcard match', async () => {
@@ -265,11 +257,9 @@ describe('WildcardMockLink', () => {
           data: updateData,
         })
       })
-      await actHook(() =>
-        waitFor(() => {
-          expect(rendered.result.current).toEqual(updateData)
-        }),
-      )
+      await waitFor(() => {
+        expect(rendered.result.current).toEqual(updateData)
+      })
     })
 
     it('by pushing an update without an "initial response" for non-wildcard match', async () => {
@@ -301,11 +291,9 @@ describe('WildcardMockLink', () => {
           data: updateData,
         })
       })
-      await actHook(() =>
-        waitFor(() => {
-          expect(rendered.result.current).toEqual(updateData)
-        }),
-      )
+      await waitFor(() => {
+        expect(rendered.result.current).toEqual(updateData)
+      })
     })
 
     it('by pushing an update without an "initial response" for non-wildcard match without variables', async () => {
@@ -349,11 +337,9 @@ describe('WildcardMockLink', () => {
           data: updateData,
         })
       })
-      await actHook(() =>
-        waitFor(() => {
-          expect(rendered.result.current).toEqual(updateData)
-        }),
-      )
+      await waitFor(() => {
+        expect(rendered.result.current).toEqual(updateData)
+      })
     })
   })
 

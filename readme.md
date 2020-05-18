@@ -8,8 +8,8 @@
 
 - Match requests with arbitrary variables.
 - Provide mocks that match more than one request.
-- Mock subscriptions and push out subscription responses during a test via method calls.
-- Grab the latest mutation/query/subscription for use in test assertions.
+- Mock subscriptions and send subscription responses after setting up the `MockedProvider` in a test via method calls.
+- Grab the mutation/query/subscription requests for use in test assertions.
 
 ## Documentation
 
@@ -54,15 +54,29 @@ The following returns true if the last query matches `CAT_QUALITIES_QUERY`.
 link.lastQueryMatches(CAT_QUALITIES_QUERY)
 ```
 
-There is also `lastMutationMatches` and `lastSubscriptionMatches`.
+There are also `lastMutationMatches` and `lastSubscriptionMatches`. The arrays `queries`, `mutations` and `subscriptions` contain all of the corresponding requests.
 
-### Waiting for the latest response to return data
+### Waiting for responses to return data
+
+These methods can be used to ensure updates don't happen outside of `act`.
 
 ```typescript
 await link.waitForLastResponse()
 ```
 
-This can be used to ensure updates don't happen outside of `act`.
+This waits for the last response to complete.
+
+```typescript
+await link.waitForAllResponses()
+```
+
+This waits for all pending responses to complete.
+
+```typescript
+await link.waitForAllResponsesRecursively()
+```
+
+This can be used when a component makes a new request based on data received from another response. It waits until there are no more pending responses.
 
 ### Testing components with mock data
 
@@ -217,11 +231,9 @@ it('can push updates using the API', async () => {
   expect(link.lastSubscriptionMatches(MISCHIEF_SUBSCRIPTION)).toBeTruthy()
   expect(link.lastSubscription?.variables).toEqual({ catName: 'la don' })
 
-  await actHook(() =>
-    waitFor(() => {
-      expect(rendered.result.current).toEqual(initialData)
-    }),
-  )
+  await waitFor(() => {
+    expect(rendered.result.current).toEqual(initialData)
+  })
 
   const updateData = {
     actsOfMischief: {
@@ -235,10 +247,8 @@ it('can push updates using the API', async () => {
       data: updateData,
     })
   })
-  await actHook(() =>
-    waitFor(() => {
-      expect(rendered.result.current).toEqual(updateData)
-    }),
-  )
+  await waitFor(() => {
+    expect(rendered.result.current).toEqual(updateData)
+  })
 })
 ```
