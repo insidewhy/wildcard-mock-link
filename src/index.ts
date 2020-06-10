@@ -167,7 +167,7 @@ export class WildcardMockLink extends ApolloLink {
     } else {
       const regularMock = this.getRegularMockMatch(op)
       if (!regularMock) {
-        throw new Error('No mocks matched')
+        throw new Error(`No mocks matched: ${op.operationName}`)
       } else if (!regularMock.error && !regularMock.result) {
         throw new Error('Must provide error or result for query/mutation mocks')
       }
@@ -193,7 +193,7 @@ export class WildcardMockLink extends ApolloLink {
     } else {
       const regularMock = this.getRegularMockMatch(op)
       if (!regularMock) {
-        throw new Error('No mocks matched')
+        throw new Error(`No mocks matched: ${op.operationName}`)
       }
 
       return new Observable<FetchResult>((observer) => {
