@@ -26,6 +26,7 @@ export {
 
 export const MATCH_ANY_PARAMETERS = Symbol()
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type GraphQLVariables = Record<string, any>
 
 export interface GraphQLRequestWithWildcard
@@ -44,6 +45,11 @@ type MockedResponseWithoutRequest = Omit<MockedResponse, 'request'>
 export type MockedResponses = ReadonlyArray<
   WildcardMockedResponse | MockedResponse
 >
+
+export interface WildcardMockLinkOptions {
+  addTypename?: boolean
+  act?: Act
+}
 
 interface WildcardMock extends MockedResponseWithoutRequest {
   nMatches: number
@@ -77,18 +83,23 @@ const forwardResponseToObserver = (
   observer: FetchResultObserver,
   response: MockedResponseWithoutRequest,
   complete: boolean,
+  act: Act,
 ): void => {
   const { result, error, delay } = response
   if (result) {
     setTimeout(() => {
-      observer.next(getResultFromFetchResult(result))
+      act(() => {
+        observer.next(getResultFromFetchResult(result))
+      })
       if (complete) {
         observer.complete()
       }
     }, delay)
   } else if (error) {
     setTimeout(() => {
-      observer.error(error)
+      act(() => {
+        observer.error(error)
+      })
     }, delay)
   }
 }
@@ -97,6 +108,12 @@ function isOperationDefinitionNode(
   node: DefinitionNode,
 ): node is OperationDefinitionNode {
   return (node as OperationDefinitionNode).operation !== undefined
+}
+
+type Act = (fun: () => void) => void
+
+const callFunction: Act = (fun: () => void) => {
+  fun()
 }
 
 /**
@@ -124,11 +141,24 @@ export class WildcardMockLink extends ApolloLink {
 
   private pendingResponses = new Set<Promise<void>>()
   private lastResponse?: Promise<void>
+  private act: Act
+  public addTypename: boolean
 
   private openSubscriptions = new Map<string, FetchResultObserver>()
 
-  constructor(mockedResponses: MockedResponses, public addTypename = true) {
+  constructor(
+    mockedResponses: MockedResponses,
+    public options: boolean | WildcardMockLinkOptions = { addTypename: true },
+  ) {
     super()
+
+    if (typeof options === 'boolean') {
+      this.act = callFunction
+      this.addTypename = options
+    } else {
+      this.addTypename = options.addTypename ?? true
+      this.act = options.act || callFunction
+    }
 
     mockedResponses.forEach((mockedResponse) => {
       if (isWildcard(mockedResponse)) {
@@ -160,7 +190,7 @@ export class WildcardMockLink extends ApolloLink {
       }
 
       const response = new Observable<FetchResult>((observer) => {
-        forwardResponseToObserver(observer, wildcardMock, true)
+        forwardResponseToObserver(observer, wildcardMock, true, this.act)
       })
       this.setLastResponsePromiseFromObservable(response)
       return response
@@ -173,7 +203,7 @@ export class WildcardMockLink extends ApolloLink {
       }
 
       const response = new Observable<FetchResult>((observer) => {
-        forwardResponseToObserver(observer, regularMock, true)
+        forwardResponseToObserver(observer, regularMock, true, this.act)
       })
 
       this.setLastResponsePromiseFromObservable(response)
@@ -188,7 +218,7 @@ export class WildcardMockLink extends ApolloLink {
     if (wildcardMock) {
       return new Observable<FetchResult>((observer) => {
         this.openSubscriptions.set(this.queryToString(op.query), observer)
-        forwardResponseToObserver(observer, wildcardMock, false)
+        forwardResponseToObserver(observer, wildcardMock, false, this.act)
       })
     } else {
       const regularMock = this.getRegularMockMatch(op)
@@ -203,7 +233,7 @@ export class WildcardMockLink extends ApolloLink {
           this.queryAndVariablesToString(op.query, op.variables),
           observer,
         )
-        forwardResponseToObserver(observer, regularMock, false)
+        forwardResponseToObserver(observer, regularMock, false, this.act)
       })
     }
   }
@@ -225,7 +255,9 @@ export class WildcardMockLink extends ApolloLink {
         'Could not send subscription result for subscription that is not open',
       )
     } else {
-      subscription.next(response)
+      this.act(() => {
+        subscription.next(response)
+      })
     }
   }
 
@@ -243,7 +275,9 @@ export class WildcardMockLink extends ApolloLink {
         'Could not send subscription result for subscription that is not open',
       )
     } else {
-      subscription.next(response)
+      this.act(() => {
+        subscription.next(response)
+      })
     }
   }
 

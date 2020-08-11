@@ -38,15 +38,19 @@ describe('WildcardMockLink', () => {
             loveliness: 'very',
           },
         }
-        const { wrapper, link } = hookWrapperWithApolloMocks([
-          {
-            request: {
-              query: CAT_QUALITIES_QUERY,
-              variables,
+        const { wrapper, link } = hookWrapperWithApolloMocks(
+          [
+            {
+              request: {
+                query: CAT_QUALITIES_QUERY,
+                variables,
+              },
+              result: { data },
             },
-            result: { data },
-          },
-        ])
+          ],
+          undefined,
+          { act: actHook },
+        )
         const { result } = renderHook(() => useQueryOnce(variables.catName), {
           wrapper,
         })
@@ -65,15 +69,19 @@ describe('WildcardMockLink', () => {
             loveliness: 'very',
           },
         }
-        const { wrapper, link } = hookWrapperWithApolloMocks([
-          {
-            request: {
-              query: CAT_QUALITIES_QUERY,
-              variables: MATCH_ANY_PARAMETERS,
+        const { wrapper, link } = hookWrapperWithApolloMocks(
+          [
+            {
+              request: {
+                query: CAT_QUALITIES_QUERY,
+                variables: MATCH_ANY_PARAMETERS,
+              },
+              result: { data },
             },
-            result: { data },
-          },
-        ])
+          ],
+          undefined,
+          { act: actHook },
+        )
         const { result } = renderHook(() => useQueryOnce('tortand'), {
           wrapper,
         })
@@ -100,15 +108,19 @@ describe('WildcardMockLink', () => {
             loveliness: 'highest',
           },
         }
-        const { wrapper, link } = hookWrapperWithApolloMocks([
-          {
-            request: {
-              query: CAT_QUALITIES_QUERY,
-              variables: MATCH_ANY_PARAMETERS,
+        const { wrapper, link } = hookWrapperWithApolloMocks(
+          [
+            {
+              request: {
+                query: CAT_QUALITIES_QUERY,
+                variables: MATCH_ANY_PARAMETERS,
+              },
+              result: { data },
             },
-            result: { data },
-          },
-        ])
+          ],
+          undefined,
+          { act: actHook },
+        )
         const rendered = renderHook(useQueryTwice, { wrapper })
         await actHook(() => link.waitForLastResponse())
         expect(link.lastQueryMatches(CAT_QUALITIES_QUERY)).toBeTruthy()
@@ -147,15 +159,19 @@ describe('WildcardMockLink', () => {
           severity: 'extreme',
         },
       }
-      const { wrapper, link } = hookWrapperWithApolloMocks([
-        {
-          request: {
-            query: MISCHIEF_SUBSCRIPTION,
-            variables: MATCH_ANY_PARAMETERS,
+      const { wrapper, link } = hookWrapperWithApolloMocks(
+        [
+          {
+            request: {
+              query: MISCHIEF_SUBSCRIPTION,
+              variables: MATCH_ANY_PARAMETERS,
+            },
+            result: { data: initialData },
           },
-          result: { data: initialData },
-        },
-      ])
+        ],
+        undefined,
+        { act: actHook },
+      )
       const rendered = renderHook(() => useActsOfMischief(variables.catName), {
         wrapper,
       })
@@ -192,15 +208,19 @@ describe('WildcardMockLink', () => {
           severity: 'extreme',
         },
       }
-      const { wrapper, link } = hookWrapperWithApolloMocks([
-        {
-          request: {
-            query: MISCHIEF_SUBSCRIPTION,
-            variables,
+      const { wrapper, link } = hookWrapperWithApolloMocks(
+        [
+          {
+            request: {
+              query: MISCHIEF_SUBSCRIPTION,
+              variables,
+            },
+            result: { data: initialData },
           },
-          result: { data: initialData },
-        },
-      ])
+        ],
+        undefined,
+        { act: actHook },
+      )
       const rendered = renderHook(() => useActsOfMischief(variables.catName), {
         wrapper,
       })
@@ -230,15 +250,19 @@ describe('WildcardMockLink', () => {
 
     it('by pushing an update without an "initial response" for wildcard match', async () => {
       const variables = { catName: 'Mr Box' }
-      const { wrapper, link } = hookWrapperWithApolloMocks([
-        {
-          request: {
-            query: MISCHIEF_SUBSCRIPTION,
-            variables: MATCH_ANY_PARAMETERS,
+      const { wrapper, link } = hookWrapperWithApolloMocks(
+        [
+          {
+            request: {
+              query: MISCHIEF_SUBSCRIPTION,
+              variables: MATCH_ANY_PARAMETERS,
+            },
+            result: undefined,
           },
-          result: undefined,
-        },
-      ])
+        ],
+        undefined,
+        { act: actHook },
+      )
       const rendered = renderHook(() => useActsOfMischief(variables.catName), {
         wrapper,
       })
@@ -264,15 +288,19 @@ describe('WildcardMockLink', () => {
 
     it('by pushing an update without an "initial response" for non-wildcard match', async () => {
       const variables = { catName: 'Tupon The Bravest' }
-      const { wrapper, link } = hookWrapperWithApolloMocks([
-        {
-          request: {
-            query: MISCHIEF_SUBSCRIPTION,
-            variables,
+      const { wrapper, link } = hookWrapperWithApolloMocks(
+        [
+          {
+            request: {
+              query: MISCHIEF_SUBSCRIPTION,
+              variables,
+            },
+            result: undefined,
           },
-          result: undefined,
-        },
-      ])
+        ],
+        undefined,
+        { act: actHook },
+      )
       const rendered = renderHook(() => useActsOfMischief(variables.catName), {
         wrapper,
       })
@@ -311,14 +339,18 @@ describe('WildcardMockLink', () => {
         return data
       }
 
-      const { wrapper, link } = hookWrapperWithApolloMocks([
-        {
-          request: {
-            query: CUDDLES_SUBSCRIPTION,
+      const { wrapper, link } = hookWrapperWithApolloMocks(
+        [
+          {
+            request: {
+              query: CUDDLES_SUBSCRIPTION,
+            },
+            result: undefined,
           },
-          result: undefined,
-        },
-      ])
+        ],
+        undefined,
+        { act: actHook },
+      )
       const rendered = renderHook(() => useCuddles(), {
         wrapper,
       })
@@ -380,6 +412,8 @@ describe('WildcardMockLink', () => {
             },
           },
         })),
+        undefined,
+        { act: actHook },
       )
 
       const { result } = renderHook(useThreeQueries, {
@@ -427,6 +461,7 @@ describe('withApolloMocks utility', () => {
           result: { data },
         },
       ],
+      { act },
     )
     const { getByRole } = render(element)
     await act(() => link.waitForLastResponse())
