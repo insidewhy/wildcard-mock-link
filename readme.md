@@ -18,6 +18,8 @@
 The `MockLink` provided with apollo requires the variables for every matching query to be specified ahead of time. In certain circumstances this is not convenient, i.e. using the `MockedProvider` in storybook stories. `WildcardMockLink` allows mocks to be specified that match a query with any variables, and these mocks can be configured to match more than once.
 
 ```typescript
+import { act } from '@testing-library/react'
+
 const CAT_QUALITIES_QUERY = gql`
   query($catName: String!) {
     qualities(cats: $catName) {
@@ -26,16 +28,19 @@ const CAT_QUALITIES_QUERY = gql`
   }
 `
 
-const link = new WildcardMockLink([
-  {
-    request: {
-      query: CAT_QUALITIES_QUERY,
-      variables: MATCH_ANY_PARAMETERS,
+const link = new WildcardMockLink(
+  [
+    {
+      request: {
+        query: CAT_QUALITIES_QUERY,
+        variables: MATCH_ANY_PARAMETERS,
+      },
+      result: { data },
+      nMatches: 2,
     },
-    result: { data },
-    nMatches: 2,
-  },
-])
+  ],
+  { addTypename: true, act },
+)
 
 return (
   <MockedProvider link={link}>
@@ -45,6 +50,8 @@ return (
 ```
 
 The above mocked provider will match two requests for `CAT_QUALITIES_QUERY` no matter what the variables are. Here `nMatches` is used to restrict the mock to the first two requests that match, when `nMatches` is omitted the mock will match an infinite number of requests.
+
+The instantiation of `WildcardMockLink` also shows the options, `addTypename` which works the same as apollo's `MockLink` and `act` which can be used to ensure all operations that emit data to components are wrapped in an `act` function.
 
 ### Asserting against the latest request/mutation/subscription.
 

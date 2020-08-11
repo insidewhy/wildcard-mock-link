@@ -2,15 +2,15 @@ import { MockedProvider } from '@apollo/react-testing'
 import { ApolloCache } from 'apollo-cache'
 import React, { FC, ReactElement } from 'react'
 
-import { WildcardMockLink, MockedResponses } from '.'
+import { WildcardMockLink, WildcardMockLinkOptions, MockedResponses } from '.'
 
 export interface MockLinkAndElement {
   link: WildcardMockLink
   element: ReactElement
 }
 
-export interface WildcardMockOptions<TSerializedCache = {}> {
-  addTypename?: boolean
+export interface WildcardMockOptions<TSerializedCache = {}>
+  extends WildcardMockLinkOptions {
   cache?: ApolloCache<TSerializedCache>
 }
 
@@ -22,7 +22,7 @@ export function withApolloMocks<TSerializedCache = {}>(
   apolloMocks: MockedResponses = [],
   options: WildcardMockOptions<TSerializedCache> = { addTypename: true },
 ): MockLinkAndElement {
-  const link = new WildcardMockLink(apolloMocks)
+  const link = new WildcardMockLink(apolloMocks, options)
 
   const element = (
     <MockedProvider
@@ -51,7 +51,7 @@ export function hookWrapperWithApolloMocks(
   Wrap?: FC,
   options: WildcardMockOptions = { addTypename: true },
 ): HookWrapperAndLink {
-  const link = new WildcardMockLink(apolloMocks)
+  const link = new WildcardMockLink(apolloMocks, options)
   const wrapper: FC = ({ children }) => (
     <MockedProvider addTypename={options.addTypename} link={link}>
       {Wrap ? <Wrap>{children}</Wrap> : (children as ReactElement)}
