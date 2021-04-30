@@ -1,4 +1,4 @@
-import { useQuery, useSubscription } from '@apollo/react-hooks'
+import { useQuery, useSubscription } from '@apollo/client'
 import { render, act, waitFor } from '@testing-library/react'
 import { renderHook, act as actHook } from '@testing-library/react-hooks'
 import gql from 'graphql-tag'

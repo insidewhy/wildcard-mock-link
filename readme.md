@@ -90,7 +90,7 @@ This can be used when a component makes a new request based on data received fro
 This library provides a utility function `withApolloMocks` which can be used to created a component tree with access to mocked data. It returns the react element at the head of the component tree and a `WildcardMockLink` object and can be used in conjunction with the functionality mentioned above to create a test like this:
 
 ```typescript
-import { useQuery } from '@apollo/react-hooks'
+import { useQuery } from '@apollo/client'
 import { render, act } from '@testing-library/react'
 import gql from 'graphql-tag'
 import React, { FC } from 'react'
@@ -142,7 +142,7 @@ it('can be used to mock data for a component tree', async () => {
 This library provides a utility function `hookWrapperWithApolloMocks` for creating a wrapper object which can be used with `@testing-library/react-hooks`. It returns a `WildcardMockLink` and a `wrapper` and can be used in conjunction with the functionality mentioned above to create a test like this:
 
 ```typescript
-import { useQuery } from '@apollo/react-hooks'
+import { useQuery } from '@apollo/client'
 import { renderHook, act as actHook } from '@testing-library/react-hooks'
 import gql from 'graphql-tag'
 import {
@@ -192,7 +192,7 @@ it('can be used to mock data for a hook', async () => {
 The `WildcardMockLink` provides a way to push new responses out to subscriptions. This can be used during tests to make it easier to test how components respond to subscription updates. The `sendWildcardSubscriptionResult` method can be used to send a new response which matches a wildcard mock, otherwise `sendSubscriptionResult` can be used. Here is an example:
 
 ```typescript
-import { useQuery } from '@apollo/react-hooks'
+import { useQuery } from '@apollo/client'
 import { waitFor } from '@testing-library/react'
 import { renderHook, act as actHook } from '@testing-library/react-hooks'
 import gql from 'graphql-tag'
