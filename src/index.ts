@@ -1,12 +1,12 @@
-import { MockedResponse } from '@apollo/react-testing'
 import {
   Operation,
   FetchResult,
   Observable,
   GraphQLRequest,
   ApolloLink,
-} from 'apollo-link'
-import { addTypenameToDocument } from 'apollo-utilities'
+} from '@apollo/client'
+import { MockedResponse } from '@apollo/client/testing'
+import { addTypenameToDocument } from '@apollo/client/utilities'
 import delay from 'delay'
 import stringify from 'fast-json-stable-stringify'
 import {
@@ -45,6 +45,8 @@ type MockedResponseWithoutRequest = Omit<MockedResponse, 'request'>
 export type MockedResponses = ReadonlyArray<
   WildcardMockedResponse | MockedResponse
 >
+
+type Act = (fun: () => void) => void
 
 export interface WildcardMockLinkOptions {
   addTypename?: boolean
@@ -110,8 +112,6 @@ function isOperationDefinitionNode(
   return (node as OperationDefinitionNode).operation !== undefined
 }
 
-type Act = (fun: () => void) => void
-
 const callFunction: Act = (fun: () => void) => {
   fun()
 }
@@ -161,11 +161,7 @@ export class WildcardMockLink extends ApolloLink {
     }
 
     mockedResponses.forEach((mockedResponse) => {
-      if (isWildcard(mockedResponse)) {
-        this.addWildcardMockedResponse(mockedResponse)
-      } else {
-        this.addMockedResponse(mockedResponse)
-      }
+      this.addMockedResponse(mockedResponse)
     })
   }
 
@@ -197,7 +193,11 @@ export class WildcardMockLink extends ApolloLink {
     } else {
       const regularMock = this.getRegularMockMatch(op)
       if (!regularMock) {
-        throw new Error(`No mocks matched: ${op.operationName}`)
+        const errorString = `No mocks matched ${op.operationName}: ${print(
+          op.query,
+        )}, variables: ${JSON.stringify(op.variables)}`
+        console.warn(errorString)
+        throw new Error(errorString)
       } else if (!regularMock.error && !regularMock.result) {
         throw new Error('Must provide error or result for query/mutation mocks')
       }
@@ -223,7 +223,11 @@ export class WildcardMockLink extends ApolloLink {
     } else {
       const regularMock = this.getRegularMockMatch(op)
       if (!regularMock) {
-        throw new Error(`No mocks matched: ${op.operationName}`)
+        const errorString = `No mocks matched ${op.operationName}: ${print(
+          op.query,
+        )}, variables: ${JSON.stringify(op.variables)}`
+        console.warn(errorString)
+        throw new Error(errorString)
       }
 
       return new Observable<FetchResult>((observer) => {
@@ -297,37 +301,34 @@ export class WildcardMockLink extends ApolloLink {
     }
   }
 
-  /**
-   * Add one or more mocked responses that match any variables.
-   */
-  addWildcardMockedResponse(...responses: WildcardMockedResponse[]): void {
+  addMockedResponse(
+    ...responses: Array<MockedResponse | WildcardMockedResponse>
+  ): void {
     responses.forEach((response) => {
-      const mockKey = this.queryToString(response.request.query)
-      const storedMocks = this.wildcardMatches.get(mockKey)
-      const storedMock = {
-        result: response.result,
-        nMatches: response.nMatches || Number.POSITIVE_INFINITY,
-        delay: response.delay || 0,
-      }
-      if (storedMocks) {
-        storedMocks.push(storedMock)
+      if (isWildcard(response)) {
+        const mockKey = this.queryToString(response.request.query)
+        const storedMocks = this.wildcardMatches.get(mockKey)
+        const storedMock = {
+          result: response.result,
+          nMatches: response.nMatches || Number.POSITIVE_INFINITY,
+          delay: response.delay || 0,
+        }
+        if (storedMocks) {
+          storedMocks.push(storedMock)
+        } else {
+          this.wildcardMatches.set(mockKey, [storedMock])
+        }
       } else {
-        this.wildcardMatches.set(mockKey, [storedMock])
-      }
-    })
-  }
-
-  addMockedResponse(...responses: MockedResponse[]): void {
-    responses.forEach((response) => {
-      const mockKey = this.queryAndVariablesToString(
-        response.request.query,
-        response.request.variables,
-      )
-      const matchesForKey = this.regularMatches.get(mockKey)
-      if (matchesForKey) {
-        matchesForKey.push(response)
-      } else {
-        this.regularMatches.set(mockKey, [response])
+        const mockKey = this.queryAndVariablesToString(
+          response.request.query,
+          response.request.variables,
+        )
+        const matchesForKey = this.regularMatches.get(mockKey)
+        if (matchesForKey) {
+          matchesForKey.push(response)
+        } else {
+          this.regularMatches.set(mockKey, [response])
+        }
       }
     })
   }

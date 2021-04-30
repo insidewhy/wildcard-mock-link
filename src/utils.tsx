@@ -1,5 +1,5 @@
-import { MockedProvider } from '@apollo/react-testing'
-import { ApolloCache } from 'apollo-cache'
+import { MockedProvider } from '@apollo/client/testing'
+import { ApolloCache } from '@apollo/client/cache'
 import React, { FC, ReactElement } from 'react'
 
 import { WildcardMockLink, WildcardMockLinkOptions, MockedResponses } from '.'
