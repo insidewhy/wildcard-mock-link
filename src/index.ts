@@ -116,6 +116,11 @@ const callFunction: Act = (fun: () => void) => {
   fun()
 }
 
+const observableWithError = (error: Error): Observable<FetchResult> =>
+  new Observable((observer) => {
+    observer.error(error)
+  })
+
 /**
  * Extends MockLink to provide the ability to match request queries independent
  * of their variables and have them match 1 or more responses. Also stores the
@@ -182,7 +187,9 @@ export class WildcardMockLink extends ApolloLink {
     const wildcardMock = this.getWildcardMockMatch(op)
     if (wildcardMock) {
       if (!wildcardMock.error && !wildcardMock.result) {
-        throw new Error('Must provide error or result for query/mutation mocks')
+        return observableWithError(
+          new Error('Must provide error or result for query/mutation mocks'),
+        )
       }
 
       const response = new Observable<FetchResult>((observer) => {
@@ -197,9 +204,11 @@ export class WildcardMockLink extends ApolloLink {
           op.query,
         )}, variables: ${JSON.stringify(op.variables)}`
         console.warn(errorString)
-        throw new Error(errorString)
+        return observableWithError(new Error(errorString))
       } else if (!regularMock.error && !regularMock.result) {
-        throw new Error('Must provide error or result for query/mutation mocks')
+        return observableWithError(
+          new Error('Must provide error or result for query/mutation mocks'),
+        )
       }
 
       const response = new Observable<FetchResult>((observer) => {
@@ -227,7 +236,7 @@ export class WildcardMockLink extends ApolloLink {
           op.query,
         )}, variables: ${JSON.stringify(op.variables)}`
         console.warn(errorString)
-        throw new Error(errorString)
+        return observableWithError(new Error(errorString))
       }
 
       return new Observable<FetchResult>((observer) => {
