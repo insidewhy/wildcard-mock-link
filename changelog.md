@@ -1,6 +1,6 @@
 # Changelog
 
-- 2021/04/26 - 2.0.0
+- 2021/04/26 - 2.0.0-rc.3
 
   - Migrate to apollo client 3
   - Remove `addWildcardMockedResponse`, now `addMockedResponse` tests if the mocked response contains a wildcard before deciding what to do.
