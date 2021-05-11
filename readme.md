@@ -21,7 +21,7 @@ The `MockLink` provided with apollo requires the variables for every matching qu
 import { act } from '@testing-library/react'
 
 const CAT_QUALITIES_QUERY = gql`
-  query($catName: String!) {
+  query ($catName: String!) {
     qualities(cats: $catName) {
       loveliness
     }
@@ -49,7 +49,7 @@ return (
 )
 ```
 
-The above mocked provider will match two requests for `CAT_QUALITIES_QUERY` no matter what the variables are. Here `nMatches` is used to restrict the mock to the first two requests that match, when `nMatches` is omitted the mock will match an infinite number of requests.
+The above mocked provider will match two requests for `CAT_QUALITIES_QUERY` no matter what the variables are. Here `nMatches` is used to restrict the mock to the first two requests that match, when `nMatches` is omitted the mock will match one request. `Number.POSITIVE_INFINITY` can be used to allow an inifinite number of matchs.
 
 The instantiation of `WildcardMockLink` also shows the options, `addTypename` which works the same as apollo's `MockLink` and `act` which can be used to ensure all operations that emit data to components are wrapped in an `act` function.
 
@@ -100,7 +100,7 @@ import {
 } from 'wildcard-mock-link'
 
 const CAT_QUALITIES_QUERY = gql`
-  query($catName: String!) {
+  query ($catName: String!) {
     qualities(cats: $catName) {
       loveliness
     }
@@ -151,7 +151,7 @@ import {
 } from 'wildcard-mock-link'
 
 const CAT_QUALITIES_QUERY = gql`
-  query($catName: String!) {
+  query ($catName: String!) {
     qualities(cats: $catName) {
       loveliness
     }
@@ -202,7 +202,7 @@ import {
 } from 'wildcard-mock-link'
 
 const MISCHIEF_SUBSCRIPTION = gql`
-  subscription($catName: String!) {
+  subscription ($catName: String!) {
     actsOfMischief(cats: $catName) {
       description
       severity

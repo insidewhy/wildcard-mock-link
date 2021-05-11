@@ -34,17 +34,18 @@ export interface GraphQLRequestWithWildcard
   variables?: GraphQLRequest['variables'] | typeof MATCH_ANY_PARAMETERS
 }
 
-export interface WildcardMockedResponse
-  extends Omit<MockedResponse, 'request'> {
-  request: GraphQLRequestWithWildcard
+interface MockedResponseWithMatchCount extends MockedResponse {
+  /** Use Number.POSITIVE_INFINITY to allow infinite matches */
   nMatches?: number
 }
 
-type MockedResponseWithoutRequest = Omit<MockedResponse, 'request'>
+type WildcardMock = Omit<MockedResponseWithMatchCount, 'request'>
 
-export type MockedResponses = ReadonlyArray<
-  WildcardMockedResponse | MockedResponse
->
+export interface WildcardMockedResponse extends WildcardMock {
+  request: GraphQLRequestWithWildcard
+}
+
+export type MockedResponses = readonly WildcardMockedResponse[]
 
 type Act = (fun: () => void) => void
 
@@ -53,14 +54,12 @@ export interface WildcardMockLinkOptions {
   act?: Act
 }
 
-interface WildcardMock extends MockedResponseWithoutRequest {
-  nMatches: number
-}
-
-function isWildcard(
-  mock: WildcardMockedResponse | MockedResponse,
-): mock is WildcardMockedResponse {
-  return mock.request.variables === MATCH_ANY_PARAMETERS
+// MockedResponseWithMatchCount is a narrower type than WildcardMockedResponse so it
+// has to be isNotWildcard rather than isWildcard
+function isNotWildcard(
+  mock: WildcardMockedResponse,
+): mock is MockedResponseWithMatchCount {
+  return mock.request.variables !== MATCH_ANY_PARAMETERS
 }
 
 const getResultFromFetchResult = (
@@ -83,7 +82,7 @@ type FetchResultObserver = ZenObservable.SubscriptionObserver<FetchResult>
 
 const forwardResponseToObserver = (
   observer: FetchResultObserver,
-  response: MockedResponseWithoutRequest,
+  response: WildcardMock,
   complete: boolean,
   act: Act,
 ): void => {
@@ -128,7 +127,7 @@ const observableWithError = (error: Error): Observable<FetchResult> =>
  */
 export class WildcardMockLink extends ApolloLink {
   private wildcardMatches = new Map<string, WildcardMock[]>()
-  private regularMatches = new Map<string, MockedResponse[]>()
+  private regularMatches = new Map<string, MockedResponseWithMatchCount[]>()
 
   queries: StoredOperation[] = []
   mutations: StoredOperation[] = []
@@ -310,24 +309,9 @@ export class WildcardMockLink extends ApolloLink {
     }
   }
 
-  addMockedResponse(
-    ...responses: Array<MockedResponse | WildcardMockedResponse>
-  ): void {
+  addMockedResponse(...responses: MockedResponses): void {
     responses.forEach((response) => {
-      if (isWildcard(response)) {
-        const mockKey = this.queryToString(response.request.query)
-        const storedMocks = this.wildcardMatches.get(mockKey)
-        const storedMock = {
-          result: response.result,
-          nMatches: response.nMatches || Number.POSITIVE_INFINITY,
-          delay: response.delay || 0,
-        }
-        if (storedMocks) {
-          storedMocks.push(storedMock)
-        } else {
-          this.wildcardMatches.set(mockKey, [storedMock])
-        }
-      } else {
+      if (isNotWildcard(response)) {
         const mockKey = this.queryAndVariablesToString(
           response.request.query,
           response.request.variables,
@@ -337,6 +321,19 @@ export class WildcardMockLink extends ApolloLink {
           matchesForKey.push(response)
         } else {
           this.regularMatches.set(mockKey, [response])
+        }
+      } else {
+        const mockKey = this.queryToString(response.request.query)
+        const storedMocks = this.wildcardMatches.get(mockKey)
+        const storedMock = {
+          result: response.result,
+          nMatches: response.nMatches,
+          delay: response.delay || 0,
+        }
+        if (storedMocks) {
+          storedMocks.push(storedMock)
+        } else {
+          this.wildcardMatches.set(mockKey, [storedMock])
         }
       }
     })
@@ -393,23 +390,25 @@ export class WildcardMockLink extends ApolloLink {
    * Wait for the all responses that are currently pending.
    */
   waitForAllResponses(): Promise<void> {
-    return (Promise.all(
+    return Promise.all(
       Array.from(this.pendingResponses),
-    ) as unknown) as Promise<void>
+    ) as unknown as Promise<void>
   }
 
   /**
    * Wait for all responses that are currently pending, and all responses that are triggered
    * as a result of those responses being sent.
+   * @param requestWindow How long to wait between between requests for a new request to be
+   *        made, by default use 0 which allows one tick.
    */
-  async waitForAllResponsesRecursively(): Promise<void> {
+  async waitForAllResponsesRecursively(requestWindow = 0): Promise<void> {
     if (!this.pendingResponses.size) {
       return
     }
 
     await this.waitForAllResponses()
-    // allow code to issue new requests within the next tick
-    await delay(0)
+    // allow code to issue new requests within the request window
+    await delay(requestWindow)
     await this.waitForAllResponsesRecursively()
   }
 
@@ -431,13 +430,12 @@ export class WildcardMockLink extends ApolloLink {
   private getWildcardMockMatch(op: Operation): WildcardMock | undefined {
     const mockKey = this.queryToString(op.query)
     const mocks = this.wildcardMatches.get(mockKey)
-
     if (!mocks) {
       return undefined
     }
 
     const nextMock = mocks[0]
-    if (--nextMock.nMatches === 0) {
+    if (nextMock.nMatches === undefined || --nextMock.nMatches === 0) {
       mocks.shift()
       if (!mocks.length) {
         this.wildcardMatches.delete(mockKey)
@@ -446,10 +444,23 @@ export class WildcardMockLink extends ApolloLink {
     return nextMock
   }
 
-  private getRegularMockMatch(op: Operation): MockedResponse | undefined {
+  private getRegularMockMatch(
+    op: Operation,
+  ): MockedResponseWithMatchCount | undefined {
     const mockKey = this.queryAndVariablesToString(op.query, op.variables)
     const mocks = this.regularMatches.get(mockKey)
-    return mocks?.shift()
+    if (!mocks) {
+      return undefined
+    }
+
+    const nextMock = mocks[0]
+    if (nextMock.nMatches === undefined || --nextMock.nMatches === 0) {
+      mocks.shift()
+      if (!mocks.length) {
+        this.regularMatches.delete(mockKey)
+      }
+    }
+    return nextMock
   }
 
   private setLastResponsePromiseFromObservable(

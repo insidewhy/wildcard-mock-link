@@ -13,7 +13,7 @@ import {
 /* eslint-disable @typescript-eslint/explicit-function-return-type */
 
 const CAT_QUALITIES_QUERY = gql`
-  query($catName: String!) {
+  query ($catName: String!) {
     qualities(cats: $catName) {
       loveliness
     }
@@ -91,7 +91,7 @@ describe('WildcardMockLink', () => {
         expect(result.current).toEqual(data)
       })
 
-      it('for multiple requests with the same mock', async () => {
+      it('for multiple requests with the same mock when using nMatches', async () => {
         const useQueryTwice = () => {
           const { data: firstData } = useQuery(CAT_QUALITIES_QUERY, {
             variables: { catName: 'snorf' },
@@ -116,6 +116,7 @@ describe('WildcardMockLink', () => {
                 variables: MATCH_ANY_PARAMETERS,
               },
               result: { data },
+              nMatches: 2,
             },
           ],
           undefined,
@@ -135,7 +136,7 @@ describe('WildcardMockLink', () => {
 
   describe('can be used to mock subscriptions', () => {
     const MISCHIEF_SUBSCRIPTION = gql`
-      subscription($catName: String!) {
+      subscription ($catName: String!) {
         actsOfMischief(cats: $catName) {
           description
           severity
