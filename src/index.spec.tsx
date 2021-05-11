@@ -48,13 +48,12 @@ describe('WildcardMockLink', () => {
               result: { data },
             },
           ],
-          undefined,
           { act: actHook },
         )
         const { result } = renderHook(() => useQueryOnce(variables.catName), {
           wrapper,
         })
-        await actHook(() => link.waitForLastResponse())
+        await link.waitForLastResponse()
         expect(link.lastQueryMatches(CAT_QUALITIES_QUERY)).toBeTruthy()
         expect(link.lastQuery?.variables).toEqual(variables)
         expect(result.current).toEqual(data)
@@ -79,13 +78,12 @@ describe('WildcardMockLink', () => {
               result: { data },
             },
           ],
-          undefined,
           { act: actHook },
         )
         const { result } = renderHook(() => useQueryOnce('tortand'), {
           wrapper,
         })
-        await actHook(() => link.waitForLastResponse())
+        await link.waitForLastResponse()
         expect(link.lastQueryMatches(CAT_QUALITIES_QUERY)).toBeTruthy()
         expect(link.lastQuery?.variables).toEqual({ catName: 'tortand' })
         expect(result.current).toEqual(data)
@@ -119,11 +117,10 @@ describe('WildcardMockLink', () => {
               nMatches: 2,
             },
           ],
-          undefined,
           { act: actHook },
         )
         const rendered = renderHook(useQueryTwice, { wrapper })
-        await actHook(() => link.waitForLastResponse())
+        await link.waitForLastResponse()
         expect(link.lastQueryMatches(CAT_QUALITIES_QUERY)).toBeTruthy()
         expect(link.lastQuery?.variables).toEqual({ catName: 'candrle' })
         expect(rendered.result.current).toEqual({
@@ -170,7 +167,6 @@ describe('WildcardMockLink', () => {
             result: { data: initialData },
           },
         ],
-        undefined,
         { act: actHook },
       )
       const rendered = renderHook(() => useActsOfMischief(variables.catName), {
@@ -190,10 +186,8 @@ describe('WildcardMockLink', () => {
           severity: 'mild',
         },
       }
-      actHook(() => {
-        link.sendWildcardSubscriptionResult(MISCHIEF_SUBSCRIPTION, {
-          data: updateData,
-        })
+      link.sendWildcardSubscriptionResult(MISCHIEF_SUBSCRIPTION, {
+        data: updateData,
       })
       await waitFor(() => {
         expect(rendered.result.current).toEqual(updateData)
@@ -219,7 +213,6 @@ describe('WildcardMockLink', () => {
             result: { data: initialData },
           },
         ],
-        undefined,
         { act: actHook },
       )
       const rendered = renderHook(() => useActsOfMischief(variables.catName), {
@@ -239,10 +232,8 @@ describe('WildcardMockLink', () => {
           severity: 'awesome',
         },
       }
-      actHook(() => {
-        link.sendSubscriptionResult(MISCHIEF_SUBSCRIPTION, variables, {
-          data: updateData,
-        })
+      link.sendSubscriptionResult(MISCHIEF_SUBSCRIPTION, variables, {
+        data: updateData,
       })
       await waitFor(() => {
         expect(rendered.result.current).toEqual(updateData)
@@ -261,7 +252,6 @@ describe('WildcardMockLink', () => {
             result: undefined,
           },
         ],
-        undefined,
         { act: actHook },
       )
       const rendered = renderHook(() => useActsOfMischief(variables.catName), {
@@ -277,10 +267,8 @@ describe('WildcardMockLink', () => {
           severity: 'mild',
         },
       }
-      actHook(() => {
-        link.sendWildcardSubscriptionResult(MISCHIEF_SUBSCRIPTION, {
-          data: updateData,
-        })
+      link.sendWildcardSubscriptionResult(MISCHIEF_SUBSCRIPTION, {
+        data: updateData,
       })
       await waitFor(() => {
         expect(rendered.result.current).toEqual(updateData)
@@ -299,7 +287,6 @@ describe('WildcardMockLink', () => {
             result: undefined,
           },
         ],
-        undefined,
         { act: actHook },
       )
       const rendered = renderHook(() => useActsOfMischief(variables.catName), {
@@ -315,10 +302,8 @@ describe('WildcardMockLink', () => {
           severity: 'mild',
         },
       }
-      actHook(() => {
-        link.sendSubscriptionResult(MISCHIEF_SUBSCRIPTION, variables, {
-          data: updateData,
-        })
+      link.sendSubscriptionResult(MISCHIEF_SUBSCRIPTION, variables, {
+        data: updateData,
       })
       await waitFor(() => {
         expect(rendered.result.current).toEqual(updateData)
@@ -349,7 +334,6 @@ describe('WildcardMockLink', () => {
             result: undefined,
           },
         ],
-        undefined,
         { act: actHook },
       )
       const rendered = renderHook(() => useCuddles(), {
@@ -365,10 +349,8 @@ describe('WildcardMockLink', () => {
         },
       }
 
-      actHook(() => {
-        link.sendSubscriptionResult(CUDDLES_SUBSCRIPTION, undefined, {
-          data: updateData,
-        })
+      link.sendSubscriptionResult(CUDDLES_SUBSCRIPTION, undefined, {
+        data: updateData,
       })
       await waitFor(() => {
         expect(rendered.result.current).toEqual(updateData)
@@ -413,14 +395,13 @@ describe('WildcardMockLink', () => {
             },
           },
         })),
-        undefined,
         { act: actHook },
       )
 
       const { result } = renderHook(useThreeQueries, {
         wrapper,
       })
-      await actHook(() => link.waitForAllResponsesRecursively())
+      await link.waitForAllResponsesRecursively()
       expect(result.current).toEqual(
         catNames.map((catName) => ({
           qualities: {
@@ -465,7 +446,7 @@ describe('withApolloMocks utility', () => {
       { act },
     )
     const { getByRole } = render(element)
-    await act(() => link.waitForLastResponse())
+    await link.waitForLastResponse()
 
     expect(link.lastQueryMatches(CAT_QUALITIES_QUERY)).toBeTruthy()
     expect(link.lastQuery?.variables).toEqual({ catName: 'mr bad actor face' })

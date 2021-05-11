@@ -1,5 +1,10 @@
 # Changelog
 
+- 2021/05/11 - 2.0.0-rc.5
+
+  - Use `act` in `waitFor...` methods.
+  - Make `hookWrapperWithApolloMocks` take `Wrap` as option property rather than second argument.
+
 - 2021/05/11 - 2.0.0-rc.4
 
   - Make `nMatches` default to 1.

@@ -128,7 +128,7 @@ it('can be used to mock data for a component tree', async () => {
     ],
   )
   const { getByRole } = render(element)
-  await act(() => link.waitForLastResponse())
+  await link.waitForLastResponse()
 
   expect(link.lastQueryMatches(CAT_QUALITIES_QUERY)).toBeTruthy()
   expect(link.lastQuery?.variables).toEqual({ catName: 'mr bad actor face' })
@@ -180,7 +180,7 @@ it('can be used to mock data for a hook', async () => {
     },
   ])
   const { result } = renderHook(() => useQueryOnce('tortand'), { wrapper })
-  await actHook(() => link.waitForLastResponse())
+  await link.waitForLastResponse()
   expect(link.lastQueryMatches(CAT_QUALITIES_QUERY)).toBeTruthy()
   expect(link.lastQuery!.variables).toEqual({ catName: 'tortand' })
   expect(result.current).toEqual(data)
@@ -233,7 +233,7 @@ it('can push updates using the API', async () => {
       },
       result: { data: initialData },
     },
-  ])
+  ], undefined, { act: actHook })
   const rendered = renderHook(() => useActsOfMischief('la don'), { wrapper })
   expect(link.lastSubscriptionMatches(MISCHIEF_SUBSCRIPTION)).toBeTruthy()
   expect(link.lastSubscription?.variables).toEqual({ catName: 'la don' })
@@ -249,10 +249,8 @@ it('can push updates using the API', async () => {
       severity: 'mild',
     },
   }
-  actHook(() => {
-    link.sendWildcardSubscriptionResult(MISCHIEF_SUBSCRIPTION, {
-      data: updateData,
-    })
+  link.sendWildcardSubscriptionResult(MISCHIEF_SUBSCRIPTION, {
+    data: updateData,
   })
   await waitFor(() => {
     expect(rendered.result.current).toEqual(updateData)

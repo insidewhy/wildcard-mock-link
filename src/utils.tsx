@@ -1,5 +1,5 @@
-import { MockedProvider } from '@apollo/client/testing'
 import { ApolloCache } from '@apollo/client/cache'
+import { MockedProvider } from '@apollo/client/testing'
 import React, { FC, ReactElement } from 'react'
 
 import { WildcardMockLink, WildcardMockLinkOptions, MockedResponses } from '.'
@@ -48,9 +48,9 @@ export interface HookWrapperAndLink {
  */
 export function hookWrapperWithApolloMocks(
   apolloMocks: MockedResponses,
-  Wrap?: FC,
-  options: WildcardMockOptions = { addTypename: true },
+  options: WildcardMockOptions & { Wrap?: FC } = { addTypename: true },
 ): HookWrapperAndLink {
+  const { Wrap } = options
   const link = new WildcardMockLink(apolloMocks, options)
   const wrapper: FC = ({ children }) => (
     <MockedProvider addTypename={options.addTypename} link={link}>

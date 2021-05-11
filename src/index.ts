@@ -47,7 +47,10 @@ export interface WildcardMockedResponse extends WildcardMock {
 
 export type MockedResponses = readonly WildcardMockedResponse[]
 
-type Act = (fun: () => void) => void
+interface Act {
+  (fun: () => Promise<void>): Promise<undefined>
+  (fun: () => void): void
+}
 
 export interface WildcardMockLinkOptions {
   addTypename?: boolean
@@ -111,8 +114,12 @@ function isOperationDefinitionNode(
   return (node as OperationDefinitionNode).operation !== undefined
 }
 
-const callFunction: Act = (fun: () => void) => {
-  fun()
+function callFunction(fun: () => void): void
+function callFunction(fun: () => Promise<void>): Promise<undefined>
+function callFunction(
+  fun: (() => void) | (() => Promise<void>),
+): void | Promise<void> {
+  return fun()
 }
 
 const observableWithError = (error: Error): Observable<FetchResult> =>
@@ -161,7 +168,7 @@ export class WildcardMockLink extends ApolloLink {
       this.addTypename = options
     } else {
       this.addTypename = options.addTypename ?? true
-      this.act = options.act || callFunction
+      this.act = options.act ?? callFunction
     }
 
     mockedResponses.forEach((mockedResponse) => {
@@ -328,7 +335,7 @@ export class WildcardMockLink extends ApolloLink {
         const storedMock = {
           result: response.result,
           nMatches: response.nMatches,
-          delay: response.delay || 0,
+          delay: response.delay ?? 0,
         }
         if (storedMocks) {
           storedMocks.push(storedMock)
@@ -383,16 +390,23 @@ export class WildcardMockLink extends ApolloLink {
    * It cannot wait for responses from subscriptions because they remain open.
    */
   waitForLastResponse(): Promise<void> {
-    return this.lastResponse ?? Promise.resolve()
+    if (this.lastResponse) {
+      return this.act((): Promise<void> => this.lastResponse!)
+    } else {
+      return Promise.resolve()
+    }
   }
 
   /**
    * Wait for the all responses that are currently pending.
    */
   waitForAllResponses(): Promise<void> {
-    return Promise.all(
-      Array.from(this.pendingResponses),
-    ) as unknown as Promise<void>
+    return this.act(
+      () =>
+        Promise.all(
+          Array.from(this.pendingResponses),
+        ) as unknown as Promise<void>,
+    )
   }
 
   /**
@@ -420,7 +434,7 @@ export class WildcardMockLink extends ApolloLink {
     query: DocumentNode,
     variables: GraphQLVariables | undefined,
   ): string {
-    return this.queryToString(query) + stringify(variables || {})
+    return this.queryToString(query) + stringify(variables ?? {})
   }
 
   /**
