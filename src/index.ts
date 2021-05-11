@@ -415,15 +415,18 @@ export class WildcardMockLink extends ApolloLink {
    * @param requestWindow How long to wait between between requests for a new request to be
    *        made, by default use 0 which allows one tick.
    */
-  async waitForAllResponsesRecursively(requestWindow = 0): Promise<void> {
-    if (!this.pendingResponses.size) {
-      return
-    }
+  waitForAllResponsesRecursively(requestWindow = 0): Promise<void> {
+    const runWait = async (): Promise<void> => {
+      if (!this.pendingResponses.size) {
+        return
+      }
 
-    await this.waitForAllResponses()
-    // allow code to issue new requests within the request window
-    await delay(requestWindow)
-    await this.waitForAllResponsesRecursively()
+      await Promise.all(Array.from(this.pendingResponses))
+      // allow code to issue new requests within the request window
+      await delay(requestWindow)
+      await runWait()
+    }
+    return this.act(runWait)
   }
 
   private queryToString(query: DocumentNode): string {

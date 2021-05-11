@@ -1,5 +1,9 @@
 # Changelog
 
+- 2021/05/11 - 2.0.0-rc.6
+
+  - Run `waitForAllResponsesRecursively` in single `act`.
+
 - 2021/05/11 - 2.0.0-rc.5
 
   - Use `act` in `waitFor...` methods.
