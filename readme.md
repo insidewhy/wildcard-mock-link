@@ -225,15 +225,19 @@ it('can push updates using the API', async () => {
       severity: 'extreme',
     },
   }
-  const { wrapper, link } = hookWrapperWithApolloMocks([
-    {
-      request: {
-        query: MISCHIEF_SUBSCRIPTION,
-        variables: MATCH_ANY_PARAMETERS,
+  const { wrapper, link } = hookWrapperWithApolloMocks(
+    [
+      {
+        request: {
+          query: MISCHIEF_SUBSCRIPTION,
+          variables: MATCH_ANY_PARAMETERS,
+        },
+        result: { data: initialData },
       },
-      result: { data: initialData },
-    },
-  ], undefined, { act: actHook })
+    ],
+    undefined,
+    { act: actHook },
+  )
   const rendered = renderHook(() => useActsOfMischief('la don'), { wrapper })
   expect(link.lastSubscriptionMatches(MISCHIEF_SUBSCRIPTION)).toBeTruthy()
   expect(link.lastSubscription?.variables).toEqual({ catName: 'la don' })
