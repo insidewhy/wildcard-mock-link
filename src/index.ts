@@ -55,6 +55,7 @@ interface Act {
 export interface WildcardMockLinkOptions {
   addTypename?: boolean
   act?: Act
+  suppressMissingMockWarnings?: boolean
 }
 
 // MockedResponseWithMatchCount is a narrower type than WildcardMockedResponse so it
@@ -154,12 +155,13 @@ export class WildcardMockLink extends ApolloLink {
   private lastResponse?: Promise<void>
   private act: Act
   public addTypename: boolean
+  public suppressMissingMockWarnings = false
 
   private openSubscriptions = new Map<string, FetchResultObserver>()
 
   constructor(
     mockedResponses: MockedResponses,
-    public options: boolean | WildcardMockLinkOptions = { addTypename: true },
+    public options: boolean | WildcardMockLinkOptions = { addTypename: true, suppressMissingMockWarnings: false },
   ) {
     super()
 
@@ -168,6 +170,7 @@ export class WildcardMockLink extends ApolloLink {
       this.addTypename = options
     } else {
       this.addTypename = options.addTypename ?? true
+      this.suppressMissingMockWarnings = options.suppressMissingMockWarnings ?? false
       this.act = options.act ?? callFunction
     }
 
@@ -209,7 +212,9 @@ export class WildcardMockLink extends ApolloLink {
         const errorString = `No mocks matched ${op.operationName}: ${print(
           op.query,
         )}, variables: ${JSON.stringify(op.variables)}`
-        console.warn(errorString)
+        if (!this.suppressMissingMockWarnings) {
+          console.warn(errorString)
+        }
         return observableWithError(new Error(errorString))
       } else if (!regularMock.error && !regularMock.result) {
         return observableWithError(
@@ -241,7 +246,9 @@ export class WildcardMockLink extends ApolloLink {
         const errorString = `No mocks matched ${op.operationName}: ${print(
           op.query,
         )}, variables: ${JSON.stringify(op.variables)}`
-        console.warn(errorString)
+        if (!this.suppressMissingMockWarnings) {
+          console.warn(errorString)
+        }
         return observableWithError(new Error(errorString))
       }
 
