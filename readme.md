@@ -51,7 +51,7 @@ return (
 
 The above mocked provider will match two requests for `CAT_QUALITIES_QUERY` no matter what the variables are. Here `nMatches` is used to restrict the mock to the first two requests that match, when `nMatches` is omitted the mock will match one request. `Number.POSITIVE_INFINITY` can be used to allow an inifinite number of matchs.
 
-The instantiation of `WildcardMockLink` also shows the options, `addTypename` which works the same as apollo's `MockLink` and `act` which can be used to ensure all operations that emit data to components are wrapped in an `act` function. `suppressMissingMockWarnings` will disable the `console.warn` about missing mocks, defaults to `false`. 
+The instantiation of `WildcardMockLink` also shows the options, `addTypename` which works the same as apollo's `MockLink` and `act` which can be used to ensure all operations that emit data to components are wrapped in an `act` function. `suppressMissingMockWarnings` will disable the `console.warn` about missing mocks, defaults to `false`.
 
 ### Asserting against the latest request/mutation/subscription.
 

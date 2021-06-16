@@ -161,7 +161,10 @@ export class WildcardMockLink extends ApolloLink {
 
   constructor(
     mockedResponses: MockedResponses,
-    public options: boolean | WildcardMockLinkOptions = { addTypename: true, suppressMissingMockWarnings: false },
+    public options: boolean | WildcardMockLinkOptions = {
+      addTypename: true,
+      suppressMissingMockWarnings: false,
+    },
   ) {
     super()
 
@@ -170,7 +173,8 @@ export class WildcardMockLink extends ApolloLink {
       this.addTypename = options
     } else {
       this.addTypename = options.addTypename ?? true
-      this.suppressMissingMockWarnings = options.suppressMissingMockWarnings ?? false
+      this.suppressMissingMockWarnings =
+        options.suppressMissingMockWarnings ?? false
       this.act = options.act ?? callFunction
     }
 
