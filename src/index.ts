@@ -34,15 +34,24 @@ export interface GraphQLRequestWithWildcard
   variables?: GraphQLRequest['variables'] | typeof MATCH_ANY_PARAMETERS
 }
 
-interface MockedResponseWithMatchCount extends MockedResponse {
+interface MockedResponseWithMatchCount extends Omit<MockedResponse, 'result'> {
   /** Use Number.POSITIVE_INFINITY to allow infinite matches */
   nMatches?: number
+  result?:
+    | FetchResult
+    | ((variables: GraphQLRequest['variables'] | undefined) => FetchResult)
 }
 
-type WildcardMock = Omit<MockedResponseWithMatchCount, 'request'>
+type WildcardMock = Omit<MockedResponseWithMatchCount, 'request'> & {
+  request: GraphQLRequest
+}
 
-export interface WildcardMockedResponse extends WildcardMock {
+export interface WildcardMockedResponse
+  extends Omit<Omit<WildcardMock, 'request'>, 'result'> {
   request: GraphQLRequestWithWildcard
+  result?:
+    | FetchResult
+    | ((variables: GraphQLRequest['variables'] | undefined) => FetchResult)
 }
 
 export type MockedResponses = readonly WildcardMockedResponse[]
@@ -67,8 +76,11 @@ function isNotWildcard(
 }
 
 const getResultFromFetchResult = (
-  result: FetchResult | (() => FetchResult),
-): FetchResult => (typeof result === 'function' ? result() : result)
+  result:
+    | FetchResult
+    | ((variables: GraphQLRequest['variables'] | undefined) => FetchResult),
+  variables: GraphQLRequest['variables'] | undefined,
+): FetchResult => (typeof result === 'function' ? result(variables) : result)
 
 interface StoredOperation {
   query: DocumentNode
@@ -90,11 +102,11 @@ const forwardResponseToObserver = (
   complete: boolean,
   act: Act,
 ): void => {
-  const { result, error, delay } = response
+  const { result, error, delay, request } = response
   if (result) {
     setTimeout(() => {
       act(() => {
-        observer.next(getResultFromFetchResult(result))
+        observer.next(getResultFromFetchResult(result, request.variables))
       })
       if (complete) {
         observer.complete()
@@ -347,6 +359,13 @@ export class WildcardMockLink extends ApolloLink {
           result: response.result,
           nMatches: response.nMatches,
           delay: response.delay ?? 0,
+          request: {
+            ...response.request,
+            variables:
+              response.request.variables === MATCH_ANY_PARAMETERS
+                ? undefined
+                : response.request.variables,
+          },
         }
         if (storedMocks) {
           storedMocks.push(storedMock)
@@ -469,7 +488,10 @@ export class WildcardMockLink extends ApolloLink {
         this.wildcardMatches.delete(mockKey)
       }
     }
-    return nextMock
+    return {
+      ...nextMock,
+      request: { ...nextMock.request, variables: op.variables },
+    }
   }
 
   private getRegularMockMatch(
@@ -501,7 +523,6 @@ export class WildcardMockLink extends ApolloLink {
           this.pendingResponses.delete(responsePromise)
         })
       })
-
       this.lastResponse = responsePromise
       this.pendingResponses.add(responsePromise)
     }

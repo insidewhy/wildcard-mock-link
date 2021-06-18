@@ -1,4 +1,9 @@
-import { useQuery, useSubscription } from '@apollo/client'
+import {
+  FetchResult,
+  GraphQLRequest,
+  useQuery,
+  useSubscription,
+} from '@apollo/client'
 import { render, act, waitFor } from '@testing-library/react'
 import { renderHook, act as actHook } from '@testing-library/react-hooks'
 import gql from 'graphql-tag'
@@ -127,6 +132,43 @@ describe('WildcardMockLink', () => {
           firstData: data,
           secondData: data,
         })
+      })
+    })
+
+    describe('handles wildcard queries with response function', () => {
+      it('for a single request', async () => {
+        const data = {
+          qualities: {
+            __typename: 'Qualities',
+            loveliness: 'ok',
+          },
+        }
+        const { wrapper, link } = hookWrapperWithApolloMocks(
+          [
+            {
+              request: {
+                query: CAT_QUALITIES_QUERY,
+                variables: MATCH_ANY_PARAMETERS,
+              },
+              result: (
+                variables: GraphQLRequest['variables'] | undefined,
+              ): FetchResult => {
+                if (variables?.catName === 'scruffy') {
+                  return { data }
+                }
+                return { data: {} }
+              },
+            },
+          ],
+          { act: actHook },
+        )
+        const { result } = renderHook(() => useQueryOnce('scruffy'), {
+          wrapper,
+        })
+        await link.waitForLastResponse()
+        expect(link.lastQueryMatches(CAT_QUALITIES_QUERY)).toBeTruthy()
+        expect(link.lastQuery?.variables).toEqual({ catName: 'scruffy' })
+        expect(result.current).toEqual(data)
       })
     })
   })
