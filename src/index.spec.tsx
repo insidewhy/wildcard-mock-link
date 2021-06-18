@@ -1,9 +1,4 @@
-import {
-  FetchResult,
-  GraphQLRequest,
-  useQuery,
-  useSubscription,
-} from '@apollo/client'
+import { FetchResult, useQuery, useSubscription } from '@apollo/client'
 import { render, act, waitFor } from '@testing-library/react'
 import { renderHook, act as actHook } from '@testing-library/react-hooks'
 import gql from 'graphql-tag'
@@ -140,7 +135,7 @@ describe('WildcardMockLink', () => {
         const data = {
           qualities: {
             __typename: 'Qualities',
-            loveliness: 'ok',
+            loveliness: 'scruffy',
           },
         }
         const { wrapper, link } = hookWrapperWithApolloMocks(
@@ -151,10 +146,14 @@ describe('WildcardMockLink', () => {
                 variables: MATCH_ANY_PARAMETERS,
               },
               result: (variables): FetchResult => {
-                if (variables?.catName === 'scruffy') {
-                  return { data }
+                return {
+                  data: {
+                    qualities: {
+                      __typename: 'Qualities',
+                      loveliness: variables?.catName,
+                    },
+                  },
                 }
-                return { data: {} }
               },
             },
           ],
