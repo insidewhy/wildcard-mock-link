@@ -150,9 +150,7 @@ describe('WildcardMockLink', () => {
                 query: CAT_QUALITIES_QUERY,
                 variables: MATCH_ANY_PARAMETERS,
               },
-              result: (
-                variables: GraphQLRequest['variables'] | undefined,
-              ): FetchResult => {
+              result: (variables): FetchResult => {
                 if (variables?.catName === 'scruffy') {
                   return { data }
                 }

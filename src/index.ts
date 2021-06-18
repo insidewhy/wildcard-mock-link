@@ -37,9 +37,7 @@ export interface GraphQLRequestWithWildcard
 interface MockedResponseWithMatchCount extends Omit<MockedResponse, 'result'> {
   /** Use Number.POSITIVE_INFINITY to allow infinite matches */
   nMatches?: number
-  result?:
-    | FetchResult
-    | ((variables: GraphQLRequest['variables'] | undefined) => FetchResult)
+  result?: FetchResult | ((variables?: GraphQLVariables) => FetchResult)
 }
 
 type WildcardMock = Omit<MockedResponseWithMatchCount, 'request'> & {
@@ -49,9 +47,7 @@ type WildcardMock = Omit<MockedResponseWithMatchCount, 'request'> & {
 export interface WildcardMockedResponse
   extends Omit<Omit<WildcardMock, 'request'>, 'result'> {
   request: GraphQLRequestWithWildcard
-  result?:
-    | FetchResult
-    | ((variables: GraphQLRequest['variables'] | undefined) => FetchResult)
+  result?: FetchResult | ((variables?: GraphQLVariables) => FetchResult)
 }
 
 export type MockedResponses = readonly WildcardMockedResponse[]
@@ -76,10 +72,8 @@ function isNotWildcard(
 }
 
 const getResultFromFetchResult = (
-  result:
-    | FetchResult
-    | ((variables: GraphQLRequest['variables'] | undefined) => FetchResult),
-  variables: GraphQLRequest['variables'] | undefined,
+  result: FetchResult | ((variables?: GraphQLVariables) => FetchResult),
+  variables?: GraphQLVariables,
 ): FetchResult => (typeof result === 'function' ? result(variables) : result)
 
 interface StoredOperation {
