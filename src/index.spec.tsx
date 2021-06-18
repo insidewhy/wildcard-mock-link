@@ -129,6 +129,45 @@ describe('WildcardMockLink', () => {
         })
       })
     })
+
+    describe('handles wildcard queries with response function', () => {
+      it('for a single request', async () => {
+        const data = {
+          qualities: {
+            __typename: 'Qualities',
+            loveliness: 'scruffy',
+          },
+        }
+        const { wrapper, link } = hookWrapperWithApolloMocks(
+          [
+            {
+              request: {
+                query: CAT_QUALITIES_QUERY,
+                variables: MATCH_ANY_PARAMETERS,
+              },
+              result: (variables) => {
+                return {
+                  data: {
+                    qualities: {
+                      __typename: 'Qualities',
+                      loveliness: variables?.catName,
+                    },
+                  },
+                }
+              },
+            },
+          ],
+          { act: actHook },
+        )
+        const { result } = renderHook(() => useQueryOnce('scruffy'), {
+          wrapper,
+        })
+        await link.waitForLastResponse()
+        expect(link.lastQueryMatches(CAT_QUALITIES_QUERY)).toBeTruthy()
+        expect(link.lastQuery?.variables).toEqual({ catName: 'scruffy' })
+        expect(result.current).toEqual(data)
+      })
+    })
   })
 
   describe('can be used to mock subscriptions', () => {
