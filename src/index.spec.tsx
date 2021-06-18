@@ -1,4 +1,4 @@
-import { FetchResult, useQuery, useSubscription } from '@apollo/client'
+import { useQuery, useSubscription } from '@apollo/client'
 import { render, act, waitFor } from '@testing-library/react'
 import { renderHook, act as actHook } from '@testing-library/react-hooks'
 import gql from 'graphql-tag'
@@ -145,7 +145,7 @@ describe('WildcardMockLink', () => {
                 query: CAT_QUALITIES_QUERY,
                 variables: MATCH_ANY_PARAMETERS,
               },
-              result: (variables): FetchResult => {
+              result: (variables) => {
                 return {
                   data: {
                     qualities: {
