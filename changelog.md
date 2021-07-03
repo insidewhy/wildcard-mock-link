@@ -1,5 +1,9 @@
 # Changelog
 
+- 2021/07/03 - 2.0.1
+
+  - Pass graphql variables to result function.
+
 - 2021/06/16 - 2.0.0
 
   - Add `suppressMissingMockWarnings` option.
