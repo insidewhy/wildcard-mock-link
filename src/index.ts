@@ -6,7 +6,10 @@ import {
   ApolloLink,
 } from '@apollo/client'
 import { MockedResponse } from '@apollo/client/testing'
-import { addTypenameToDocument } from '@apollo/client/utilities'
+import {
+  addTypenameToDocument,
+  removeClientSetsFromDocument,
+} from '@apollo/client/utilities'
 import delay from 'delay'
 import stringify from 'fast-json-stable-stringify'
 import {
@@ -185,8 +188,26 @@ export class WildcardMockLink extends ApolloLink {
     }
 
     mockedResponses.forEach((mockedResponse) => {
-      this.addMockedResponse(mockedResponse)
+      const normalizedMockResponse =
+        this.normalizeMockedResponse(mockedResponse)
+      this.addMockedResponse(normalizedMockResponse)
     })
+  }
+
+  /**
+   * Normalizes a WildcardMockedResponse removing @client directives from query
+   */
+  private normalizeMockedResponse(
+    mockedResponse: WildcardMockedResponse,
+  ): WildcardMockedResponse {
+    const newMockedResponse = { ...mockedResponse }
+    const newQuery = removeClientSetsFromDocument(
+      newMockedResponse.request.query,
+    )
+    if (newQuery) {
+      newMockedResponse.request.query = newQuery
+    }
+    return newMockedResponse
   }
 
   request(op: Operation): Observable<FetchResult> | null {

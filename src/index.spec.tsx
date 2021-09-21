@@ -20,6 +20,16 @@ const CAT_QUALITIES_QUERY = gql`
   }
 `
 
+const CAT_QUALITIES_QUERY_WITH_LOCAL_ONLY_FIELDS = gql`
+  query ($catName: String!) {
+    qualities(cats: $catName) {
+      loveliness
+      playfulness @client
+      friendliness @client(always: true)
+    }
+  }
+`
+
 describe('WildcardMockLink', () => {
   describe('can be used for non-subscription queries', () => {
     const useQueryOnce = (catName: string) => {
@@ -165,6 +175,40 @@ describe('WildcardMockLink', () => {
         await link.waitForLastResponse()
         expect(link.lastQueryMatches(CAT_QUALITIES_QUERY)).toBeTruthy()
         expect(link.lastQuery?.variables).toEqual({ catName: 'scruffy' })
+        expect(result.current).toEqual(data)
+      })
+    })
+
+    describe('normalizes queries with local only fields', () => {
+      it('for a single request', async () => {
+        const variables = { catName: 'Lord Fromtar' }
+        const data = {
+          qualities: {
+            __typename: 'Qualities',
+            loveliness: 'very',
+          },
+        }
+        const { wrapper, link } = hookWrapperWithApolloMocks(
+          [
+            {
+              request: {
+                query: CAT_QUALITIES_QUERY_WITH_LOCAL_ONLY_FIELDS,
+                variables,
+              },
+              result: { data },
+            },
+          ],
+          { act: actHook },
+        )
+        const { result } = renderHook(() => useQueryOnce(variables.catName), {
+          wrapper,
+        })
+        await link.waitForLastResponse()
+        expect(link.lastQueryMatches(CAT_QUALITIES_QUERY)).toBeTruthy()
+        expect(
+          link.lastQueryMatches(CAT_QUALITIES_QUERY_WITH_LOCAL_ONLY_FIELDS),
+        ).toBeFalsy()
+        expect(link.lastQuery?.variables).toEqual(variables)
         expect(result.current).toEqual(data)
       })
     })
