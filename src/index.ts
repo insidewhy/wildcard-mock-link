@@ -138,6 +138,22 @@ const observableWithError = (error: Error): Observable<FetchResult> =>
   })
 
 /**
+   * Normalizes a WildcardMockedResponse removing @client directives from query
+   */
+ const normalizeMockedResponse = (
+  mockedResponse: WildcardMockedResponse,
+): WildcardMockedResponse => {
+  const newMockedResponse = { ...mockedResponse }
+  const newQuery = removeClientSetsFromDocument(
+    newMockedResponse.request.query,
+  )
+  if (newQuery) {
+    newMockedResponse.request.query = newQuery
+  }
+  return newMockedResponse
+}
+
+/**
  * Extends MockLink to provide the ability to match request queries independent
  * of their variables and have them match 1 or more responses. Also stores the
  * last request for use in assertion frameworks.
@@ -189,26 +205,11 @@ export class WildcardMockLink extends ApolloLink {
 
     mockedResponses.forEach((mockedResponse) => {
       const normalizedMockResponse =
-        this.normalizeMockedResponse(mockedResponse)
+        normalizeMockedResponse(mockedResponse)
       this.addMockedResponse(normalizedMockResponse)
     })
   }
 
-  /**
-   * Normalizes a WildcardMockedResponse removing @client directives from query
-   */
-  private normalizeMockedResponse(
-    mockedResponse: WildcardMockedResponse,
-  ): WildcardMockedResponse {
-    const newMockedResponse = { ...mockedResponse }
-    const newQuery = removeClientSetsFromDocument(
-      newMockedResponse.request.query,
-    )
-    if (newQuery) {
-      newMockedResponse.request.query = newQuery
-    }
-    return newMockedResponse
-  }
 
   request(op: Operation): Observable<FetchResult> | null {
     const opDefNode = op.query.definitions.find(isOperationDefinitionNode)
