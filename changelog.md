@@ -1,5 +1,9 @@
 # Changelog
 
+- 2021/09/30 - 2.0.2
+
+  - Remove @client variables when normalising mocked responses
+
 - 2021/07/03 - 2.0.1
 
   - Pass graphql variables to result function.
