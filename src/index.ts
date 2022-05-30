@@ -37,20 +37,32 @@ export interface GraphQLRequestWithWildcard
   variables?: GraphQLRequest['variables'] | typeof MATCH_ANY_PARAMETERS
 }
 
-interface MockedResponseWithMatchCount extends Omit<MockedResponse, 'result'> {
+type MockedResult<TData = Record<string, any>, TVars = GraphQLVariables> =
+  | FetchResult<TData>
+  |((variables?: TVars) => TData)
+
+interface MockedResponseWithMatchCount<
+  TData = Record<string, any>,
+  TVars = GraphQLVariables,
+> extends Omit<MockedResponse<TData>, 'result'> {
   /** Use Number.POSITIVE_INFINITY to allow infinite matches */
   nMatches?: number
-  result?: FetchResult | ((variables?: GraphQLVariables) => FetchResult)
+  result?: MockedResult<TData, TVars>
 }
 
-type WildcardMock = Omit<MockedResponseWithMatchCount, 'request'> & {
+type WildcardMock<TData = Record<string, any>, TVars = GraphQLVariables> = Omit<
+  MockedResponseWithMatchCount<TData, TVars>,
+  'request'
+> & {
   request: GraphQLRequest
 }
 
-export interface WildcardMockedResponse
-  extends Omit<Omit<WildcardMock, 'request'>, 'result'> {
+export interface WildcardMockedResponse<
+  TData = Record<string, any>,
+  TVars = GraphQLVariables,
+> extends Omit<Omit<WildcardMock<TData, TVars>, 'request'>, 'result'> {
   request: GraphQLRequestWithWildcard
-  result?: FetchResult | ((variables?: GraphQLVariables) => FetchResult)
+  result?: MockedResult<TData, TVars>
 }
 
 export type MockedResponses = readonly WildcardMockedResponse[]
@@ -75,7 +87,7 @@ function isNotWildcard(
 }
 
 const getResultFromFetchResult = (
-  result: FetchResult | ((variables?: GraphQLVariables) => FetchResult),
+  result: MockedResult,
   variables?: GraphQLVariables,
 ): FetchResult => (typeof result === 'function' ? result(variables) : result)
 
