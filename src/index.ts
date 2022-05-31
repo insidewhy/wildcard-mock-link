@@ -4,6 +4,8 @@ import {
   Observable,
   GraphQLRequest,
   ApolloLink,
+  OperationVariables,
+  Context,
 } from '@apollo/client'
 import { MockedResponse } from '@apollo/client/testing'
 import {
@@ -30,27 +32,27 @@ export {
 export const MATCH_ANY_PARAMETERS = Symbol()
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type GraphQLVariables = Record<string, any>
+type DefaultData = Record<string, any>
 
 export interface GraphQLRequestWithWildcard
   extends Omit<GraphQLRequest, 'variables'> {
   variables?: GraphQLRequest['variables'] | typeof MATCH_ANY_PARAMETERS
 }
 
-type MockedResult<TData = Record<string, any>, TVars = GraphQLVariables> =
+type MockedResult<TData = DefaultData, TVars = OperationVariables> =
   | FetchResult<TData>
-  |((variables?: TVars) => TData)
+  | ((variables?: TVars) => TData)
 
 interface MockedResponseWithMatchCount<
-  TData = Record<string, any>,
-  TVars = GraphQLVariables,
+  TData = DefaultData,
+  TVars = OperationVariables,
 > extends Omit<MockedResponse<TData>, 'result'> {
   /** Use Number.POSITIVE_INFINITY to allow infinite matches */
   nMatches?: number
   result?: MockedResult<TData, TVars>
 }
 
-type WildcardMock<TData = Record<string, any>, TVars = GraphQLVariables> = Omit<
+type WildcardMock<TData = DefaultData, TVars = OperationVariables> = Omit<
   MockedResponseWithMatchCount<TData, TVars>,
   'request'
 > & {
@@ -58,9 +60,9 @@ type WildcardMock<TData = Record<string, any>, TVars = GraphQLVariables> = Omit<
 }
 
 export interface WildcardMockedResponse<
-  TData = Record<string, any>,
-  TVars = GraphQLVariables,
-> extends Omit<Omit<WildcardMock<TData, TVars>, 'request'>, 'result'> {
+  TData = DefaultData,
+  TVars = OperationVariables,
+> extends Omit<WildcardMock<TData, TVars>, 'request' | 'result'> {
   request: GraphQLRequestWithWildcard
   result?: MockedResult<TData, TVars>
 }
@@ -88,13 +90,13 @@ function isNotWildcard(
 
 const getResultFromFetchResult = (
   result: MockedResult,
-  variables?: GraphQLVariables,
+  variables?: OperationVariables,
 ): FetchResult => (typeof result === 'function' ? result(variables) : result)
 
 interface StoredOperation {
   query: DocumentNode
-  variables: GraphQLVariables
-  context: GraphQLVariables
+  variables: OperationVariables
+  context: Context
 }
 
 const toStoredOperation = (op: Operation): StoredOperation => ({
@@ -310,7 +312,7 @@ export class WildcardMockLink extends ApolloLink {
    */
   sendSubscriptionResult(
     request: DocumentNode,
-    variables: GraphQLVariables | undefined,
+    variables: OperationVariables | undefined,
     response: FetchResult,
   ): void {
     const subscription = this.openSubscriptions.get(
@@ -489,7 +491,7 @@ export class WildcardMockLink extends ApolloLink {
 
   private queryAndVariablesToString(
     query: DocumentNode,
-    variables: GraphQLVariables | undefined,
+    variables: OperationVariables | undefined,
   ): string {
     return this.queryToString(query) + stringify(variables ?? {})
   }
