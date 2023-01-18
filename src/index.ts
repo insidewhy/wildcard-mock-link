@@ -530,10 +530,11 @@ export class WildcardMockLink extends ApolloLink {
   ): void {
     if (observable) {
       const responsePromise = new Promise<void>((resolve) => {
-        observable.subscribe(() => {
+        const resolvePromise = () => {
           resolve()
           this.pendingResponses.delete(responsePromise)
-        })
+        }
+        observable.subscribe(resolvePromise, resolvePromise)
       })
       this.lastResponse = responsePromise
       this.pendingResponses.add(responsePromise)

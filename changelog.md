@@ -1,5 +1,10 @@
 # Changelog
 
+- 2023/01/18 - 2.0.3
+
+  - Fix jest crashing when handling error responses
+  - Fix `waitFor...` methods when sending error responses
+
 - 2021/09/30 - 2.0.2
 
   - Remove @client variables when normalising mocked responses
