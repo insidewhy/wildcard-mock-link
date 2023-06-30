@@ -60,7 +60,7 @@
     "graphql": "15.5.1",
     "graphql-tag": "2.12.5",
     "husky": "7.0.1",
-    "jest": "27.0.6",
+    "jest": "27.5.1",
     "prettier": "2.4.1",
     "pretty-quick": "3.1.1",
     "react": "17.0.2",
