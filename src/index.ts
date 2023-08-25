@@ -18,6 +18,7 @@ import {
   OperationDefinitionNode,
   DefinitionNode,
 } from 'graphql'
+import ZenObservable from 'zen-observable-ts'
 
 export {
   withApolloMocks,
@@ -530,7 +531,7 @@ export class WildcardMockLink extends ApolloLink {
   ): void {
     if (observable) {
       const responsePromise = new Promise<void>((resolve) => {
-        const resolvePromise = () => {
+        const resolvePromise = (): void => {
           resolve()
           this.pendingResponses.delete(responsePromise)
         }

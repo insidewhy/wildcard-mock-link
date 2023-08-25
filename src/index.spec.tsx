@@ -484,7 +484,7 @@ describe('WildcardMockLink', () => {
       const { result } = renderHook(useThreeQueries, {
         wrapper,
       })
-      await link.waitForAllResponsesRecursively()
+      await link.waitForAllResponsesRecursively(10)
       expect(result.current).toEqual(
         catNames.map((catName) => ({
           qualities: {
