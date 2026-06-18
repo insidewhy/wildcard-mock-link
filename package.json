@@ -44,7 +44,7 @@
     "fast-json-stable-stringify": "^2.1.0"
   },
   "devDependencies": {
-    "@apollo/client": "3.5.10",
+    "@apollo/client": "3.14.1",
     "@testing-library/react": "12.0.0",
     "@testing-library/react-hooks": "7.0.1",
     "@types/jest": "26.0.24",
@@ -58,7 +58,7 @@
     "eslint-plugin-react": "7.24.0",
     "eslint-plugin-react-hooks": "4.2.0",
     "graphql": "16.8.0",
-    "graphql-tag": "2.12.6",
+    "graphql-tag": "2.12.7",
     "husky": "7.0.1",
     "jest": "27.0.6",
     "prettier": "2.4.1",
